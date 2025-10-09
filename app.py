@@ -7,7 +7,7 @@ import altair as alt
 # -------------------------------
 st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layout="wide")
 st.title("💰 Pioneer Broadband Profit & Loss Dashboard")
-st.caption("Live P&L view with KPIs for MRR, ARPU, and EBITDA Margin")
+st.caption("Live P&L view synced from Google Sheets with KPI tracking for MRR, ARPU, and EBITDA Margin")
 
 # -------------------------------
 # GOOGLE SHEET CONFIG
@@ -21,8 +21,9 @@ GOOGLE_SHEET_URL = (
 # -------------------------------
 @st.cache_data(ttl=300)
 def load_data(sheet_url):
+    """Loads the Google Sheet and returns it as a DataFrame (headers in row 2)."""
     csv_url = sheet_url.replace("/edit?usp=sharing", "/export?format=csv")
-    df = pd.read_csv(csv_url, header=1)  # headers are on row 2
+    df = pd.read_csv(csv_url, header=1)
     df.columns = df.columns.str.strip()
     return df
 
@@ -38,25 +39,13 @@ except Exception as e:
 # -------------------------------
 # EXTRACT KPI VALUES
 # -------------------------------
-# Locate the "YTD Operating Revenue" column
-mrr_col = None
-for col in df.columns:
-    if "ytd" in col.lower() and "revenue" in col.lower():
-        mrr_col = col
-        break
-
-if mrr_col:
-    try:
-        raw_value = str(df[mrr_col].iloc[10])  # row 11 → index 10
-        mrr_value = pd.to_numeric(
-            raw_value.replace(",", "").replace("$", ""), errors="coerce"
-        )
-        if pd.isna(mrr_value):
-            mrr_value = 0
-    except Exception:
+try:
+    # Row 11 (index 10), column 6 (index 5)
+    raw_value = str(df.iat[10, 5])
+    mrr_value = pd.to_numeric(raw_value.replace(",", "").replace("$", ""), errors="coerce")
+    if pd.isna(mrr_value):
         mrr_value = 0
-else:
-    st.warning("⚠️ Could not find 'YTD Operating Revenue' column.")
+except Exception:
     mrr_value = 0
 
 # Sidebar inputs
