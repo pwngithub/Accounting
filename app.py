@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import altair as alt
 
 # -------------------------------
 # APP CONFIGURATION
@@ -81,55 +80,11 @@ st.subheader("📋 Profit & Loss Sheet (Preview)")
 st.dataframe(df, use_container_width=True)
 
 # -------------------------------
-# OPTIONAL CHART
-# -------------------------------
-time_cols = [c for c in df.columns if "month" in c.lower() or "date" in c.lower()]
-amount_cols = [c for c in df.columns if any(x in c.lower() for x in ["income", "revenue", "expense", "profit", "amount"])]
-
-if time_cols and amount_cols:
-    st.subheader("📈 Revenue & Expense Trend")
-    time_col = time_cols[0]
-    melted = df.melt(id_vars=[time_col], value_vars=amount_cols, var_name="Type", value_name="Amount")
-    melted["Amount"] = pd.to_numeric(
-        melted["Amount"].astype(str).str.replace("[^0-9.-]", "", regex=True),
-        errors="coerce"
-    )
-    chart = (
-        alt.Chart(melted)
-        .mark_line(point=True)
-        .encode(
-            x=alt.X(time_col, title="Period"),
-            y=alt.Y("Amount:Q", title="Amount ($)"),
-            color="Type:N",
-            tooltip=[time_col, "Type", "Amount"],
-        )
-        .properties(height=400)
-    )
-    st.altair_chart(chart, use_container_width=True)
-
-# -------------------------------
 # DOWNLOAD
 # -------------------------------
 st.subheader("⬇️ Download Data")
 csv = df.to_csv(index=False).encode("utf-8")
 st.download_button("Download Sheet CSV", csv, "profit_loss_data.csv", "text/csv")
 
-# -------------------------------
-# DEBUG SECTION — SHOW ROWS 58–60
-# -------------------------------
 st.markdown("---")
-st.header("🧩 Diagnostic View: Rows 58–60")
-
-try:
-    st.write("🔹 Displaying DataFrame rows 58–60 (indexes 57–59):")
-    st.dataframe(df.iloc[57:60])
-    for idx in range(57, 60):
-        row_data = df.iloc[idx]
-        st.write(f"Row {idx+1}:")
-        for c_idx, val in enumerate(row_data):
-            st.write(f" - Column {c_idx} ({df.columns[c_idx]}): {val}")
-except Exception as e:
-    st.error(f"Error displaying rows 58–60: {e}")
-
-st.markdown("---")
-st.caption("© 2025 Pioneer Broadband | Live Profit & Loss Dashboard with Diagnostics")
+st.caption("© 2025 Pioneer Broadband | Live Profit & Loss Dashboard")
