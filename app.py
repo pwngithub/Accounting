@@ -5,28 +5,24 @@ import altair as alt
 # -------------------------------
 # APP CONFIGURATION
 # -------------------------------
-st.set_page_config(
-    page_title="Profit & Loss Dashboard",
-    page_icon="💰",
-    layout="wide"
-)
-
+st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layout="wide")
 st.title("💰 Pioneer Broadband Profit & Loss Dashboard")
-st.caption("Live P&L view synced from Google Sheets with KPI tracking for MRR, ARPU, and EBITDA Margin")
+st.caption("Live P&L view with KPIs for MRR, ARPU, and EBITDA Margin")
 
 # -------------------------------
 # GOOGLE SHEET CONFIG
 # -------------------------------
-GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1iiBe4CLYPlr_kpIOuvzxLliwA0ferGtBRhtnMLfhOQg/edit?usp=sharing"
+GOOGLE_SHEET_URL = (
+    "https://docs.google.com/spreadsheets/d/1iiBe4CLYPlr_kpIOuvzxLliwA0ferGtBRhtnMLfhOQg/edit?usp=sharing"
+)
 
 # -------------------------------
 # LOAD DATA FUNCTION
 # -------------------------------
 @st.cache_data(ttl=300)
 def load_data(sheet_url):
-    """Loads the Google Sheet and returns it as a DataFrame (headers in row 2)."""
     csv_url = sheet_url.replace("/edit?usp=sharing", "/export?format=csv")
-    df = pd.read_csv(csv_url, header=1)
+    df = pd.read_csv(csv_url, header=1)  # headers are on row 2
     df.columns = df.columns.str.strip()
     return df
 
@@ -34,19 +30,33 @@ try:
     df = load_data(GOOGLE_SHEET_URL)
     st.success("✅ Data loaded successfully from Google Sheet!")
 except Exception as e:
-    st.error(f"❌ Failed to load sheet. Please ensure it's shared as 'Anyone with link → Viewer'. Error: {e}")
+    st.error(
+        f"❌ Failed to load sheet. Ensure it's shared as 'Anyone with link → Viewer'. Error: {e}"
+    )
     st.stop()
 
 # -------------------------------
-# KPI EXTRACTION
+# EXTRACT KPI VALUES
 # -------------------------------
-try:
-    # Pull MRR from cell F14 (row 14, column F)
-    raw_value = str(df.iat[13, 5])
-    mrr_value = pd.to_numeric(raw_value.replace(",", "").replace("$", ""), errors="coerce")
-    if pd.isna(mrr_value):
+# Locate the "YTD Operating Revenue" column
+mrr_col = None
+for col in df.columns:
+    if "ytd" in col.lower() and "revenue" in col.lower():
+        mrr_col = col
+        break
+
+if mrr_col:
+    try:
+        raw_value = str(df[mrr_col].iloc[10])  # row 11 → index 10
+        mrr_value = pd.to_numeric(
+            raw_value.replace(",", "").replace("$", ""), errors="coerce"
+        )
+        if pd.isna(mrr_value):
+            mrr_value = 0
+    except Exception:
         mrr_value = 0
-except Exception:
+else:
+    st.warning("⚠️ Could not find 'YTD Operating Revenue' column.")
     mrr_value = 0
 
 # Sidebar inputs
@@ -68,7 +78,7 @@ col2.metric("Average Revenue Per User (ARPU)", f"${arpu_value:,.2f}")
 col3.metric("EBITDA Margin", f"{ebitda_margin_value:.2f}%")
 
 # -------------------------------
-# DISPLAY TABLE
+# DATA TABLE
 # -------------------------------
 st.subheader("📋 Profit & Loss Sheet (Preview)")
 st.dataframe(df, use_container_width=True)
@@ -83,7 +93,10 @@ if time_cols and amount_cols:
     st.subheader("📈 Revenue & Expense Trend")
     time_col = time_cols[0]
     melted = df.melt(id_vars=[time_col], value_vars=amount_cols, var_name="Type", value_name="Amount")
-    melted["Amount"] = pd.to_numeric(melted["Amount"].astype(str).str.replace("[^0-9.-]", "", regex=True), errors="coerce")
+    melted["Amount"] = pd.to_numeric(
+        melted["Amount"].astype(str).str.replace("[^0-9.-]", "", regex=True),
+        errors="coerce"
+    )
     chart = (
         alt.Chart(melted)
         .mark_line(point=True)
@@ -91,14 +104,14 @@ if time_cols and amount_cols:
             x=alt.X(time_col, title="Period"),
             y=alt.Y("Amount:Q", title="Amount ($)"),
             color="Type:N",
-            tooltip=[time_col, "Type", "Amount"]
+            tooltip=[time_col, "Type", "Amount"],
         )
         .properties(height=400)
     )
     st.altair_chart(chart, use_container_width=True)
 
 # -------------------------------
-# DOWNLOAD OPTION
+# DOWNLOAD
 # -------------------------------
 st.subheader("⬇️ Download Data")
 csv = df.to_csv(index=False).encode("utf-8")
