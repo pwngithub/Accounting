@@ -24,6 +24,7 @@ GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1iiBe4CLYPlr_kpIOuvzx
 # -------------------------------
 @st.cache_data(ttl=300)
 def load_data(sheet_url):
+    """Loads the Google Sheet and returns it as a DataFrame (headers in row 2)."""
     csv_url = sheet_url.replace("/edit?usp=sharing", "/export?format=csv")
     df = pd.read_csv(csv_url, header=1)
     df.columns = df.columns.str.strip()
@@ -37,33 +38,28 @@ except Exception as e:
     st.stop()
 
 # -------------------------------
-# EXTRACT KPI VALUES FROM CELLS
+# KPI EXTRACTION
 # -------------------------------
-# Ensure we have enough rows/columns before attempting to read
 try:
-    mrr_value = pd.to_numeric(str(df.iat[13, 5]).replace(",", "").replace("$", ""), errors="coerce")
+    # Pull MRR from cell F14 (row 14, column F)
+    raw_value = str(df.iat[13, 5])
+    mrr_value = pd.to_numeric(raw_value.replace(",", "").replace("$", ""), errors="coerce")
+    if pd.isna(mrr_value):
+        mrr_value = 0
 except Exception:
     mrr_value = 0
 
-# Sidebar input for subscriber count
+# Sidebar inputs
 st.sidebar.header("🔧 KPI Inputs")
 subscriber_count = st.sidebar.number_input("Total Active Subscribers", min_value=1, value=1000)
-
-# If EBITDA Margin exists in sheet, find it
-ebitda_margin_col = [col for col in df.columns if "ebitda" in col.lower()]
-if ebitda_margin_col:
-    try:
-        ebitda_margin_value = pd.to_numeric(str(df[ebitda_margin_col[0]].iloc[13]).replace("%", ""), errors="coerce")
-    except Exception:
-        ebitda_margin_value = 0
-else:
-    ebitda_margin_value = 0
+ebitda_margin_input = st.sidebar.number_input("EBITDA Margin (%)", min_value=0.0, max_value=100.0, value=0.0)
 
 # Calculate ARPU
 arpu_value = mrr_value / subscriber_count if subscriber_count > 0 else 0
+ebitda_margin_value = ebitda_margin_input
 
 # -------------------------------
-# DISPLAY KPI METRICS
+# KPI DISPLAY
 # -------------------------------
 st.header("📊 Key Performance Indicators")
 col1, col2, col3 = st.columns(3)
@@ -72,13 +68,13 @@ col2.metric("Average Revenue Per User (ARPU)", f"${arpu_value:,.2f}")
 col3.metric("EBITDA Margin", f"{ebitda_margin_value:.2f}%")
 
 # -------------------------------
-# SHOW TABLE BELOW
+# DISPLAY TABLE
 # -------------------------------
 st.subheader("📋 Profit & Loss Sheet (Preview)")
 st.dataframe(df, use_container_width=True)
 
 # -------------------------------
-# OPTIONAL: Chart (if 'Month' or 'Date' exists)
+# OPTIONAL CHART
 # -------------------------------
 time_cols = [c for c in df.columns if "month" in c.lower() or "date" in c.lower()]
 amount_cols = [c for c in df.columns if any(x in c.lower() for x in ["income", "revenue", "expense", "profit", "amount"])]
