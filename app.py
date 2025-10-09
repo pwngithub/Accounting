@@ -10,18 +10,21 @@ st.title("💰 Pioneer Broadband Profit & Loss Dashboard")
 st.caption("Securely synced from Google Sheets via Google Sheets API with KPI tracking for MRR, Subscribers, ARPU, and EBITDA Margin")
 
 # -------------------------------
-# LOAD GOOGLE SHEET VIA API
+# GOOGLE SHEETS SETTINGS
 # -------------------------------
 SHEET_ID = "1iiBe4CLYPlr_kpIOuvzxLliwA0ferGtBRhtnMLfhOQg"
 RANGE_NAME = "Profit & Loss!A1:Z100"  # Adjust range as needed
 
-# Load API key securely from Streamlit Secrets
+# Load API key from Streamlit secrets
 try:
     API_KEY = st.secrets["gcp"]["api_key"]
 except Exception:
     st.error("❌ Google API key not found. Please add it in Streamlit secrets under [gcp].")
     st.stop()
 
+# -------------------------------
+# LOAD DATA FROM GOOGLE SHEETS API
+# -------------------------------
 @st.cache_data(ttl=300)
 def load_sheet_data(sheet_id, range_name, api_key):
     """Fetch Google Sheet data securely via the Sheets API."""
@@ -32,7 +35,6 @@ def load_sheet_data(sheet_id, range_name, api_key):
     data = response.json().get("values", [])
     if not data:
         raise Exception("No data returned. Check your range or sheet permissions.")
-    # Convert to DataFrame
     df = pd.DataFrame(data[1:], columns=data[0])
     return df
 
@@ -90,11 +92,11 @@ st.subheader("📋 Profit & Loss Sheet (Preview)")
 st.dataframe(df, use_container_width=True)
 
 # -------------------------------
-# DOWNLOAD
+# DOWNLOAD BUTTON
 # -------------------------------
 st.subheader("⬇️ Download Data")
 csv = df.to_csv(index=False).encode("utf-8")
 st.download_button("Download Sheet CSV", csv, "profit_loss_data.csv", "text/csv")
 
 st.markdown("---")
-st.caption("© 2025 Pioneer Broadband | Secure Live Profit & Loss Dashboard (Google Sheets API)")
+st.caption("© 2025 Pioneer Broadband | Secure Profit & Loss Dashboard (Google Sheets API)")
