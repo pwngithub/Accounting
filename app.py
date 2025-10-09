@@ -39,7 +39,7 @@ if st.button("Apply Filter"):
 else:
     filtered = df
 
-# --- Optional Chart ---
+# --- Optional Chart --- 
 st.subheader("📈 Quick Visualization")
 numeric_cols = df.select_dtypes(include="number").columns.tolist()
 if numeric_cols:
