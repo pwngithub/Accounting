@@ -7,7 +7,7 @@ import altair as alt
 # -------------------------------
 st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layout="wide")
 st.title("💰 Pioneer Broadband Profit & Loss Dashboard")
-st.caption("Live P&L view synced from Google Sheets with automatic KPIs for MRR, ARPU, and EBITDA Margin")
+st.caption("Live P&L view synced from Google Sheets with KPI tracking for MRR, ARPU, and EBITDA Margin")
 
 # -------------------------------
 # GOOGLE SHEET CONFIG
@@ -35,31 +35,26 @@ except Exception as e:
     st.stop()
 
 # -------------------------------
-# FIND MRR AND SUBSCRIBERS BY LABELS
+# EXTRACT KPI VALUES
 # -------------------------------
-mrr_value = 0
-subscriber_count = 0
+def get_numeric_value(row_idx, col_idx):
+    """Safely extracts and cleans a numeric value from the DataFrame."""
+    try:
+        raw_value = str(df.iat[row_idx, col_idx])
+        return pd.to_numeric(raw_value.replace(",", "").replace("$", ""), errors="coerce")
+    except Exception:
+        return 0
 
-# Find column A (first column) text matches
-for i, row_label in enumerate(df.iloc[:, 0].astype(str)):
-    label = row_label.strip().lower()
-    if "broahub rev" in label:
-        try:
-            mrr_value = pd.to_numeric(str(df.iat[i, 5]).replace(",", "").replace("$", ""), errors="coerce")
-        except Exception:
-            mrr_value = 0
-    elif "users months" in label:
-        try:
-            subscriber_count = pd.to_numeric(str(df.iat[i, 5]).replace(",", "").replace("$", ""), errors="coerce")
-        except Exception:
-            subscriber_count = 0
+# Row 58 (index 57) = MRR
+# Row 59 (index 58) = Subscribers
+mrr_value = get_numeric_value(57, 2)
+subscriber_count = get_numeric_value(58, 2)
 
 # -------------------------------
 # KPI CALCULATIONS
 # -------------------------------
 arpu_value = (mrr_value / subscriber_count) if subscriber_count > 0 else 0
 
-# Sidebar input for manual override of EBITDA
 st.sidebar.header("🔧 KPI Inputs")
 ebitda_margin_input = st.sidebar.number_input("EBITDA Margin (%)", min_value=0.0, max_value=100.0, value=0.0)
 ebitda_margin_value = ebitda_margin_input
@@ -73,11 +68,10 @@ col1.metric("Monthly Recurring Revenue (MRR)", f"${mrr_value:,.2f}")
 col2.metric("Average Revenue Per User (ARPU)", f"${arpu_value:,.2f}")
 col3.metric("EBITDA Margin", f"{ebitda_margin_value:.2f}%")
 
-# Show warnings if missing
 if mrr_value == 0:
-    st.warning("⚠️ 'BroaHub Rev' not found or value missing.")
+    st.warning("⚠️ MRR (row 58 col C) is missing or not numeric.")
 if subscriber_count == 0:
-    st.warning("⚠️ 'Users Months' not found or value missing.")
+    st.warning("⚠️ Subscriber count (row 59 col C) is missing or zero.")
 
 # -------------------------------
 # DATA TABLE
@@ -120,4 +114,4 @@ csv = df.to_csv(index=False).encode("utf-8")
 st.download_button("Download Sheet CSV", csv, "profit_loss_data.csv", "text/csv")
 
 st.markdown("---")
-st.caption("© 2025 Pioneer Broadband | Live Profit & Loss Dashboard (auto-detected MRR & Subscribers)")
+st.caption("© 2025 Pioneer Broadband | Live Profit & Loss Dashboard with Cell-Linked KPIs")
