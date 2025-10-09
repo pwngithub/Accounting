@@ -7,13 +7,12 @@ import requests
 # -------------------------------
 st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layout="wide")
 st.title("💰 Pioneer Broadband Profit & Loss Dashboard")
-st.caption("Securely synced from Google Sheets via Google Sheets API with KPI tracking for MRR, Subscribers, ARPU, and EBITDA Margin")
+st.caption("Securely synced from Google Sheets via Google Sheets API with monthly tab selection and KPI tracking.")
 
 # -------------------------------
 # GOOGLE SHEETS SETTINGS
 # -------------------------------
 SHEET_ID = "1iiBe4CLYPlr_kpIOuvzxLliwA0ferGtBRhtnMLfhOQg"
-RANGE_NAME = "'Profit & Loss'!A1:Z100"
 
 # Load API key securely from Streamlit secrets
 try:
@@ -23,29 +22,43 @@ except Exception:
     st.stop()
 
 # -------------------------------
-# LOAD DATA FROM GOOGLE SHEETS API
+# FETCH AVAILABLE SHEET NAMES
 # -------------------------------
 @st.cache_data(ttl=300)
-def load_sheet_data(sheet_id, range_name, api_key):
-    """Fetch Google Sheet data securely via the Sheets API with smart header detection and duplicate handling."""
-    def fetch(url):
-        r = requests.get(url)
-        if r.status_code != 200:
-            raise Exception(f"HTTP {r.status_code}: {r.text}")
-        return r.json().get("values", [])
+def get_sheet_tabs(sheet_id, api_key):
+    """Retrieve all sheet/tab names from the Google Sheet."""
+    meta_url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}?key={api_key}"
+    resp = requests.get(meta_url)
+    if resp.status_code != 200:
+        raise Exception(f"Failed to get sheet metadata: {resp.text}")
+    sheets = resp.json().get("sheets", [])
+    return [s["properties"]["title"] for s in sheets]
 
-    url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/{range_name}?key={api_key}"
-    try:
-        data = fetch(url)
-    except Exception:
-        st.warning("⚠️ Named tab not found. Attempting to load the first sheet instead...")
-        fallback_url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/A1:Z100?key={api_key}"
-        data = fetch(fallback_url)
+try:
+    sheet_names = get_sheet_tabs(SHEET_ID, API_KEY)
+    month_tabs = [name for name in sheet_names if name.startswith("25.")]
+    if not month_tabs:
+        month_tabs = sheet_names
+    selected_tab = st.sidebar.selectbox("📅 Select Month", month_tabs, index=len(month_tabs)-1)
+except Exception as e:
+    st.error(f"❌ Could not fetch sheet tabs: {e}")
+    st.stop()
 
+# -------------------------------
+# LOAD SELECTED MONTH'S DATA
+# -------------------------------
+@st.cache_data(ttl=300)
+def load_sheet_data(sheet_id, tab_name, api_key):
+    """Fetch data for the selected month/tab with smart header and duplicate handling."""
+    url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/'{tab_name}'!A1:Z100?key={api_key}"
+    resp = requests.get(url)
+    if resp.status_code != 200:
+        raise Exception(f"Failed to load tab '{tab_name}': {resp.text}")
+
+    data = resp.json().get("values", [])
     if not data:
-        raise Exception("No data returned. Check your range or sheet permissions.")
+        raise Exception("No data returned from sheet.")
 
-    # --- Smart header detection ---
     header = data[0]
     if len(header) == 1 and len(data) > 1 and len(data[1]) > 1:
         header = data[1]
@@ -53,7 +66,7 @@ def load_sheet_data(sheet_id, range_name, api_key):
     else:
         body = data[1:]
 
-    # --- Clean header names and remove duplicates ---
+    # Clean headers and handle duplicates
     header = [h.strip() if h else f"Column_{i+1}" for i, h in enumerate(header)]
     seen = {}
     unique_header = []
@@ -69,14 +82,14 @@ def load_sheet_data(sheet_id, range_name, api_key):
     return df
 
 try:
-    df = load_sheet_data(SHEET_ID, RANGE_NAME, API_KEY)
-    st.success("✅ Data loaded successfully from Google Sheets API!")
+    df = load_sheet_data(SHEET_ID, selected_tab, API_KEY)
+    st.success(f"✅ Loaded data for **{selected_tab}**")
 except Exception as e:
-    st.error(f"❌ Failed to load sheet: {e}")
+    st.error(f"❌ Failed to load data for {selected_tab}: {e}")
     st.stop()
 
 # -------------------------------
-# EXTRACT KPI VALUES
+# KPI EXTRACTION
 # -------------------------------
 def get_numeric_value(df, row_idx, col_idx):
     """Safely extracts and cleans a numeric value from a DataFrame cell."""
@@ -95,7 +108,6 @@ mrr_value = get_numeric_value(df, 59, 1)
 # KPI CALCULATIONS
 # -------------------------------
 arpu_value = (mrr_value / subscriber_count) if subscriber_count > 0 else 0
-
 st.sidebar.header("🔧 KPI Inputs")
 ebitda_margin_input = st.sidebar.number_input("EBITDA Margin (%)", min_value=0.0, max_value=100.0, value=0.0)
 ebitda_margin_value = ebitda_margin_input
@@ -103,7 +115,7 @@ ebitda_margin_value = ebitda_margin_input
 # -------------------------------
 # KPI DISPLAY
 # -------------------------------
-st.header("📊 Key Performance Indicators")
+st.header(f"📊 Key Performance Indicators – {selected_tab}")
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Monthly Recurring Revenue (MRR)", f"${mrr_value:,.2f}")
 col2.metric("Subscriber Count", f"{subscriber_count:,.0f}")
@@ -118,7 +130,7 @@ if subscriber_count == 0:
 # -------------------------------
 # DATA TABLE
 # -------------------------------
-st.subheader("📋 Profit & Loss Sheet (Preview)")
+st.subheader(f"📋 Profit & Loss Sheet Preview – {selected_tab}")
 st.dataframe(df, use_container_width=True)
 
 # -------------------------------
@@ -126,7 +138,7 @@ st.dataframe(df, use_container_width=True)
 # -------------------------------
 st.subheader("⬇️ Download Data")
 csv = df.to_csv(index=False).encode("utf-8")
-st.download_button("Download Sheet CSV", csv, "profit_loss_data.csv", "text/csv")
+st.download_button(f"Download {selected_tab} CSV", csv, f"{selected_tab}_profit_loss.csv", "text/csv")
 
 st.markdown("---")
-st.caption("© 2025 Pioneer Broadband | Secure Profit & Loss Dashboard (Google Sheets API)")
+st.caption("© 2025 Pioneer Broadband | Multi-Month Profit & Loss Dashboard (Google Sheets API)")
