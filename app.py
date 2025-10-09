@@ -7,7 +7,7 @@ import altair as alt
 # -------------------------------
 st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layout="wide")
 st.title("💰 Pioneer Broadband Profit & Loss Dashboard")
-st.caption("Live P&L view synced from Google Sheets with KPI tracking for MRR, ARPU, and EBITDA Margin")
+st.caption("Live P&L view synced from Google Sheets with automatic KPIs for MRR, ARPU, and EBITDA Margin")
 
 # -------------------------------
 # GOOGLE SHEET CONFIG
@@ -35,24 +35,33 @@ except Exception as e:
     st.stop()
 
 # -------------------------------
-# EXTRACT KPI VALUES
+# FIND MRR AND SUBSCRIBERS BY LABELS
 # -------------------------------
-try:
-    # Row 12 (index 11), Column 6 (index 5)
-    raw_value = str(df.iat[11, 5])
-    mrr_value = pd.to_numeric(raw_value.replace(",", "").replace("$", ""), errors="coerce")
-    if pd.isna(mrr_value):
-        mrr_value = 0
-except Exception:
-    mrr_value = 0
+mrr_value = 0
+subscriber_count = 0
 
-# Sidebar inputs
+# Find column A (first column) text matches
+for i, row_label in enumerate(df.iloc[:, 0].astype(str)):
+    label = row_label.strip().lower()
+    if "broahub rev" in label:
+        try:
+            mrr_value = pd.to_numeric(str(df.iat[i, 5]).replace(",", "").replace("$", ""), errors="coerce")
+        except Exception:
+            mrr_value = 0
+    elif "users months" in label:
+        try:
+            subscriber_count = pd.to_numeric(str(df.iat[i, 5]).replace(",", "").replace("$", ""), errors="coerce")
+        except Exception:
+            subscriber_count = 0
+
+# -------------------------------
+# KPI CALCULATIONS
+# -------------------------------
+arpu_value = (mrr_value / subscriber_count) if subscriber_count > 0 else 0
+
+# Sidebar input for manual override of EBITDA
 st.sidebar.header("🔧 KPI Inputs")
-subscriber_count = st.sidebar.number_input("Total Active Subscribers", min_value=1, value=1000)
 ebitda_margin_input = st.sidebar.number_input("EBITDA Margin (%)", min_value=0.0, max_value=100.0, value=0.0)
-
-# KPI calculations
-arpu_value = mrr_value / subscriber_count if subscriber_count > 0 else 0
 ebitda_margin_value = ebitda_margin_input
 
 # -------------------------------
@@ -63,6 +72,12 @@ col1, col2, col3 = st.columns(3)
 col1.metric("Monthly Recurring Revenue (MRR)", f"${mrr_value:,.2f}")
 col2.metric("Average Revenue Per User (ARPU)", f"${arpu_value:,.2f}")
 col3.metric("EBITDA Margin", f"{ebitda_margin_value:.2f}%")
+
+# Show warnings if missing
+if mrr_value == 0:
+    st.warning("⚠️ 'BroaHub Rev' not found or value missing.")
+if subscriber_count == 0:
+    st.warning("⚠️ 'Users Months' not found or value missing.")
 
 # -------------------------------
 # DATA TABLE
@@ -104,21 +119,5 @@ st.subheader("⬇️ Download Data")
 csv = df.to_csv(index=False).encode("utf-8")
 st.download_button("Download Sheet CSV", csv, "profit_loss_data.csv", "text/csv")
 
-# -------------------------------
-# DEBUG SECTION — SHOW COLUMN A ROWS 61–63
-# -------------------------------
 st.markdown("---")
-st.header("🧩 Diagnostics")
-st.write("📍 Column A (Rows 61–63 as seen by pandas):")
-
-try:
-    for r in range(60, 63):  # Row 61–63 = indexes 60–62
-        value = df.iat[r, 0]  # Column A = index 0
-        st.write(f"Row {r+1}: {value}")
-except Exception as e:
-    st.error(f"Error reading rows 61–63: {e}")
-
-st.dataframe(df.iloc[60:63])
-
-st.markdown("---")
-st.caption("© 2025 Pioneer Broadband | Live Profit & Loss Dashboard with Diagnostics")
+st.caption("© 2025 Pioneer Broadband | Live Profit & Loss Dashboard (auto-detected MRR & Subscribers)")
