@@ -31,9 +31,7 @@ try:
     df = load_data(GOOGLE_SHEET_URL)
     st.success("✅ Data loaded successfully from Google Sheet!")
 except Exception as e:
-    st.error(
-        f"❌ Failed to load sheet. Ensure it's shared as 'Anyone with link → Viewer'. Error: {e}"
-    )
+    st.error(f"❌ Failed to load sheet. Ensure it's shared as 'Anyone with link → Viewer'. Error: {e}")
     st.stop()
 
 # -------------------------------
@@ -106,5 +104,21 @@ st.subheader("⬇️ Download Data")
 csv = df.to_csv(index=False).encode("utf-8")
 st.download_button("Download Sheet CSV", csv, "profit_loss_data.csv", "text/csv")
 
+# -------------------------------
+# DEBUG SECTION — SHOW COLUMN A ROWS 61–63
+# -------------------------------
 st.markdown("---")
-st.caption("© 2025 Pioneer Broadband | Live Profit & Loss Dashboard with KPIs")
+st.header("🧩 Diagnostics")
+st.write("📍 Column A (Rows 61–63 as seen by pandas):")
+
+try:
+    for r in range(60, 63):  # Row 61–63 = indexes 60–62
+        value = df.iat[r, 0]  # Column A = index 0
+        st.write(f"Row {r+1}: {value}")
+except Exception as e:
+    st.error(f"Error reading rows 61–63: {e}")
+
+st.dataframe(df.iloc[60:63])
+
+st.markdown("---")
+st.caption("© 2025 Pioneer Broadband | Live Profit & Loss Dashboard with Diagnostics")
