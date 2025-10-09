@@ -40,8 +40,8 @@ except Exception as e:
 # EXTRACT KPI VALUES
 # -------------------------------
 try:
-    # Row 12 (index 11), Column 7 (index 6)
-    raw_value = str(df.iat[11, 6])
+    # Row 12 (index 11), Column 6 (index 5)
+    raw_value = str(df.iat[11, 5])
     mrr_value = pd.to_numeric(raw_value.replace(",", "").replace("$", ""), errors="coerce")
     if pd.isna(mrr_value):
         mrr_value = 0
