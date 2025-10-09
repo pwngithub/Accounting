@@ -13,7 +13,7 @@ st.caption("Securely synced from Google Sheets via Google Sheets API with KPI tr
 # GOOGLE SHEETS SETTINGS
 # -------------------------------
 SHEET_ID = "1iiBe4CLYPlr_kpIOuvzxLliwA0ferGtBRhtnMLfhOQg"
-RANGE_NAME = "'Profit & Loss'!A1:Z100"  # ✅ properly quoted for special characters or spaces
+RANGE_NAME = "'Profit & Loss'!A1:Z100"  # properly quoted for special characters
 
 # Load API key securely from Streamlit secrets
 try:
@@ -27,24 +27,34 @@ except Exception:
 # -------------------------------
 @st.cache_data(ttl=300)
 def load_sheet_data(sheet_id, range_name, api_key):
-    """Fetch Google Sheet data securely via the Sheets API with fallback to the first sheet."""
-    url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/{range_name}?key={api_key}"
-    response = requests.get(url)
+    """Fetch Google Sheet data securely via the Sheets API with smart header detection."""
+    def fetch(url):
+        r = requests.get(url)
+        if r.status_code != 200:
+            raise Exception(f"HTTP {r.status_code}: {r.text}")
+        return r.json().get("values", [])
 
-    # Fallback logic if named tab fails
-    if response.status_code != 200:
+    url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/{range_name}?key={api_key}"
+    try:
+        data = fetch(url)
+    except Exception:
         st.warning("⚠️ Named tab not found. Attempting to load the first sheet instead...")
         fallback_url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/A1:Z100?key={api_key}"
-        response = requests.get(fallback_url)
+        data = fetch(fallback_url)
 
-    if response.status_code != 200:
-        raise Exception(f"Google API request failed ({response.status_code}): {response.text}")
-
-    data = response.json().get("values", [])
     if not data:
-        raise Exception("No data returned. Check your sheet's range or permissions.")
+        raise Exception("No data returned. Check your range or sheet permissions.")
 
-    df = pd.DataFrame(data[1:], columns=data[0])
+    # --- Smart header detection ---
+    header = data[0]
+    # If header has only 1 column but next row has more, use next row as header
+    if len(header) == 1 and len(data) > 1 and len(data[1]) > 1:
+        header = data[1]
+        body = data[2:]
+    else:
+        body = data[1:]
+
+    df = pd.DataFrame(body, columns=header)
     return df
 
 try:
