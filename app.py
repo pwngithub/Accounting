@@ -7,7 +7,7 @@ import altair as alt
 # -------------------------------
 st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layout="wide")
 st.title("💰 Pioneer Broadband Profit & Loss Dashboard")
-st.caption("Live P&L view synced from Google Sheets with KPI tracking for MRR, ARPU, and EBITDA Margin")
+st.caption("Live P&L view synced from Google Sheets with KPI tracking for MRR, Subscribers, ARPU, and EBITDA Margin")
 
 # -------------------------------
 # GOOGLE SHEET CONFIG
@@ -63,10 +63,11 @@ ebitda_margin_value = ebitda_margin_input
 # KPI DISPLAY
 # -------------------------------
 st.header("📊 Key Performance Indicators")
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 col1.metric("Monthly Recurring Revenue (MRR)", f"${mrr_value:,.2f}")
-col2.metric("Average Revenue Per User (ARPU)", f"${arpu_value:,.2f}")
-col3.metric("EBITDA Margin", f"{ebitda_margin_value:.2f}%")
+col2.metric("Subscriber Count", f"{subscriber_count:,.0f}")
+col3.metric("Average Revenue Per User (ARPU)", f"${arpu_value:,.2f}")
+col4.metric("EBITDA Margin", f"{ebitda_margin_value:.2f}%")
 
 if mrr_value == 0:
     st.warning("⚠️ MRR (Row 60 Col B) is missing or not numeric.")
@@ -122,7 +123,6 @@ st.header("🧩 Diagnostic View: Rows 58–60")
 try:
     st.write("🔹 Displaying DataFrame rows 58–60 (indexes 57–59):")
     st.dataframe(df.iloc[57:60])
-
     for idx in range(57, 60):
         row_data = df.iloc[idx]
         st.write(f"Row {idx+1}:")
