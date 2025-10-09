@@ -40,8 +40,8 @@ except Exception as e:
 # EXTRACT KPI VALUES
 # -------------------------------
 try:
-    # Row 11 (index 10), column 6 (index 5)
-    raw_value = str(df.iat[10, 5])
+    # Row 11 (index 10), Column 13 (index 12)
+    raw_value = str(df.iat[10, 12])
     mrr_value = pd.to_numeric(raw_value.replace(",", "").replace("$", ""), errors="coerce")
     if pd.isna(mrr_value):
         mrr_value = 0
@@ -53,7 +53,7 @@ st.sidebar.header("🔧 KPI Inputs")
 subscriber_count = st.sidebar.number_input("Total Active Subscribers", min_value=1, value=1000)
 ebitda_margin_input = st.sidebar.number_input("EBITDA Margin (%)", min_value=0.0, max_value=100.0, value=0.0)
 
-# Calculate ARPU
+# KPI calculations
 arpu_value = mrr_value / subscriber_count if subscriber_count > 0 else 0
 ebitda_margin_value = ebitda_margin_input
 
