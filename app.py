@@ -13,7 +13,7 @@ st.caption("Securely synced from Google Sheets via Google Sheets API with KPI tr
 # GOOGLE SHEETS SETTINGS
 # -------------------------------
 SHEET_ID = "1iiBe4CLYPlr_kpIOuvzxLliwA0ferGtBRhtnMLfhOQg"
-RANGE_NAME = "'Profit & Loss'!A1:Z100"  # properly quoted for special characters
+RANGE_NAME = "'Profit & Loss'!A1:Z100"
 
 # Load API key securely from Streamlit secrets
 try:
@@ -27,7 +27,7 @@ except Exception:
 # -------------------------------
 @st.cache_data(ttl=300)
 def load_sheet_data(sheet_id, range_name, api_key):
-    """Fetch Google Sheet data securely via the Sheets API with smart header detection."""
+    """Fetch Google Sheet data securely via the Sheets API with smart header detection and duplicate handling."""
     def fetch(url):
         r = requests.get(url)
         if r.status_code != 200:
@@ -47,14 +47,25 @@ def load_sheet_data(sheet_id, range_name, api_key):
 
     # --- Smart header detection ---
     header = data[0]
-    # If header has only 1 column but next row has more, use next row as header
     if len(header) == 1 and len(data) > 1 and len(data[1]) > 1:
         header = data[1]
         body = data[2:]
     else:
         body = data[1:]
 
-    df = pd.DataFrame(body, columns=header)
+    # --- Clean header names and remove duplicates ---
+    header = [h.strip() if h else f"Column_{i+1}" for i, h in enumerate(header)]
+    seen = {}
+    unique_header = []
+    for h in header:
+        if h in seen:
+            seen[h] += 1
+            unique_header.append(f"{h}_{seen[h]}")
+        else:
+            seen[h] = 1
+            unique_header.append(h)
+
+    df = pd.DataFrame(body, columns=unique_header)
     return df
 
 try:
