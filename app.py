@@ -7,7 +7,7 @@ import requests
 # -------------------------------
 st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layout="wide")
 st.title("💰 Pioneer Broadband Profit & Loss Dashboard")
-st.caption("Securely synced from Google Sheets via Google Sheets API with monthly tab selection and KPI tracking.")
+st.caption("Securely synced from Google Sheets via Google Sheets API with monthly tab selection and smart header detection.")
 
 # -------------------------------
 # GOOGLE SHEETS SETTINGS
@@ -45,12 +45,12 @@ except Exception as e:
     st.stop()
 
 # -------------------------------
-# LOAD SELECTED MONTH'S DATA
+# SMART LOADER
 # -------------------------------
 @st.cache_data(ttl=300)
 def load_sheet_data(sheet_id, tab_name, api_key):
-    """Fetch data for the selected month/tab with smart header and duplicate handling."""
-    url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/'{tab_name}'!A1:Z100?key={api_key}"
+    """Fetch data for the selected month/tab and auto-detect header row."""
+    url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/'{tab_name}'!A1:Z200?key={api_key}"
     resp = requests.get(url)
     if resp.status_code != 200:
         raise Exception(f"Failed to load tab '{tab_name}': {resp.text}")
@@ -59,14 +59,21 @@ def load_sheet_data(sheet_id, tab_name, api_key):
     if not data:
         raise Exception("No data returned from sheet.")
 
-    header = data[0]
-    if len(header) == 1 and len(data) > 1 and len(data[1]) > 1:
-        header = data[1]
-        body = data[2:]
-    else:
-        body = data[1:]
+    # --- Detect header row dynamically ---
+    header_row_idx = None
+    for i, row in enumerate(data):
+        filled_cells = sum(1 for c in row if c.strip() != "")
+        if filled_cells >= 3:  # heuristic: likely header row
+            header_row_idx = i
+            break
 
-    # Clean headers and handle duplicates
+    if header_row_idx is None:
+        raise Exception("Could not detect header row in sheet.")
+
+    header = data[header_row_idx]
+    body = data[header_row_idx + 1:]
+
+    # --- Clean header names and remove duplicates ---
     header = [h.strip() if h else f"Column_{i+1}" for i, h in enumerate(header)]
     seen = {}
     unique_header = []
