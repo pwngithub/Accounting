@@ -1,26 +1,28 @@
-# Pioneer Broadband Google Sheet Dashboard
+# Pioneer Broadband Project Performance Dashboard
 
-A simple Streamlit web app that connects to a Google Sheet and displays interactive data.
+This Streamlit app visualizes project performance metrics directly from a live Google Sheet.
 
 ## 🚀 Features
 
-- Reads live data from a Google Sheet (via CSV export)
-- Table view with dynamic filtering
-- Quick bar chart visualization
-- Download filtered data as CSV
+- Reads from a live Google Sheet (via CSV export link)
+- Automatic refresh every 5 minutes
+- Interactive filtering by project type
+- KPI metrics and completion progress
+- Altair bar charts and progress bars
 
 ## 🛠️ Setup
 
-1. Clone or unzip the project folder.
-2. Install dependencies:
+1. Ensure your Google Sheet is shared with **Anyone with the link → Viewer**.
+2. Clone or unzip the project.
+3. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-3. Run the app:
+4. Run the app:
    ```bash
    streamlit run app.py
    ```
 
-## 🔗 Sheet Used
+## 🔗 Google Sheet Used
 
-[Google Sheet Link](https://docs.google.com/spreadsheets/d/1iiBe4CLYPlr_kpIOuvzxLliwA0ferGtBRhtnMLfhOQg/edit?usp=sharing)
+[View Sheet](https://docs.google.com/spreadsheets/d/1iiBe4CLYPlr_kpIOuvzxLliwA0ferGtBRhtnMLfhOQg/edit?usp=sharing)
