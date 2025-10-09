@@ -47,8 +47,8 @@ def get_numeric_value(row_idx, col_idx):
 
 # Row 58 (index 57) = MRR
 # Row 59 (index 58) = Subscribers
-mrr_value = get_numeric_value(57, 2)
-subscriber_count = get_numeric_value(58, 2)
+mrr_value = get_numeric_value(57, 1)
+subscriber_count = get_numeric_value(58, 1)
 
 # -------------------------------
 # KPI CALCULATIONS
@@ -69,9 +69,9 @@ col2.metric("Average Revenue Per User (ARPU)", f"${arpu_value:,.2f}")
 col3.metric("EBITDA Margin", f"{ebitda_margin_value:.2f}%")
 
 if mrr_value == 0:
-    st.warning("⚠️ MRR (row 58 col C) is missing or not numeric.")
+    st.warning("⚠️ MRR (Row 58 Col B) is missing or not numeric.")
 if subscriber_count == 0:
-    st.warning("⚠️ Subscriber count (row 59 col C) is missing or zero.")
+    st.warning("⚠️ Subscriber count (Row 59 Col B) is missing or zero.")
 
 # -------------------------------
 # DATA TABLE
