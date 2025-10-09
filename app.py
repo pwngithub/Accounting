@@ -12,7 +12,7 @@ st.set_page_config(
 )
 
 st.title("💰 Pioneer Broadband Profit & Loss Dashboard")
-st.caption("Live P&L view with KPIs for MRR, ARPU, and EBITDA Margin")
+st.caption("Live P&L view synced from Google Sheets with KPI tracking for MRR, ARPU, and EBITDA Margin")
 
 # -------------------------------
 # GOOGLE SHEET CONFIG
@@ -25,7 +25,7 @@ GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1iiBe4CLYPlr_kpIOuvzx
 @st.cache_data(ttl=300)
 def load_data(sheet_url):
     csv_url = sheet_url.replace("/edit?usp=sharing", "/export?format=csv")
-    df = pd.read_csv(csv_url, header=1)  # Headers in 2nd row
+    df = pd.read_csv(csv_url, header=1)
     df.columns = df.columns.str.strip()
     return df
 
@@ -37,88 +37,57 @@ except Exception as e:
     st.stop()
 
 # -------------------------------
-# SIDEBAR FILTERS
+# EXTRACT KPI VALUES FROM CELLS
 # -------------------------------
-st.sidebar.header("🔧 Filters & Options")
-if st.sidebar.button("🔄 Refresh Data"):
-    load_data.clear()
-    st.rerun()
+# Ensure we have enough rows/columns before attempting to read
+try:
+    mrr_value = pd.to_numeric(str(df.iat[13, 5]).replace(",", "").replace("$", ""), errors="coerce")
+except Exception:
+    mrr_value = 0
 
-# Optional user input
+# Sidebar input for subscriber count
+st.sidebar.header("🔧 KPI Inputs")
 subscriber_count = st.sidebar.number_input("Total Active Subscribers", min_value=1, value=1000)
 
-# Detect likely columns
-filter_columns = [col for col in df.columns if any(x in col.lower() for x in ["month", "category", "department"])]
+# If EBITDA Margin exists in sheet, find it
+ebitda_margin_col = [col for col in df.columns if "ebitda" in col.lower()]
+if ebitda_margin_col:
+    try:
+        ebitda_margin_value = pd.to_numeric(str(df[ebitda_margin_col[0]].iloc[13]).replace("%", ""), errors="coerce")
+    except Exception:
+        ebitda_margin_value = 0
+else:
+    ebitda_margin_value = 0
 
-filters = {}
-for col in filter_columns:
-    unique_vals = sorted(df[col].dropna().unique().tolist())
-    selected = st.sidebar.multiselect(f"Filter by {col}:", options=unique_vals, default=unique_vals)
-    filters[col] = selected
-
-filtered_df = df.copy()
-for col, selected_vals in filters.items():
-    filtered_df = filtered_df[filtered_df[col].isin(selected_vals)]
-
-# -------------------------------
-# CLEAN NUMERIC COLUMNS
-# -------------------------------
-amount_cols = [col for col in df.columns if any(x in col.lower() for x in ["income", "revenue", "expense", "profit", "amount", "mrr", "ebitda"])]
-
-for col in amount_cols:
-    filtered_df[col] = pd.to_numeric(
-        filtered_df[col].astype(str).str.replace("[^0-9.-]", "", regex=True),
-        errors="coerce"
-    ).fillna(0)
+# Calculate ARPU
+arpu_value = mrr_value / subscriber_count if subscriber_count > 0 else 0
 
 # -------------------------------
-# KPI CALCULATIONS
-# -------------------------------
-total_revenue = filtered_df[[c for c in amount_cols if "revenue" in c.lower() or "income" in c.lower() or "mrr" in c.lower()]].sum().sum()
-total_expenses = filtered_df[[c for c in amount_cols if "expense" in c.lower() or "cost" in c.lower()]].sum().sum()
-ebitda = filtered_df[[c for c in amount_cols if "ebitda" in c.lower()]].sum().sum()
-if ebitda == 0:
-    ebitda = total_revenue - total_expenses  # fallback
-
-net_profit = total_revenue - total_expenses
-mrr = total_revenue
-arpu = mrr / subscriber_count if subscriber_count > 0 else 0
-ebitda_margin = (ebitda / total_revenue * 100) if total_revenue else 0
-
-# -------------------------------
-# KPI DISPLAY
+# DISPLAY KPI METRICS
 # -------------------------------
 st.header("📊 Key Performance Indicators")
-
 col1, col2, col3 = st.columns(3)
-col1.metric("Monthly Recurring Revenue (MRR)", f"${mrr:,.2f}")
-col2.metric("Average Revenue Per User (ARPU)", f"${arpu:,.2f}")
-col3.metric("EBITDA Margin", f"{ebitda_margin:.2f}%")
+col1.metric("Monthly Recurring Revenue (MRR)", f"${mrr_value:,.2f}")
+col2.metric("Average Revenue Per User (ARPU)", f"${arpu_value:,.2f}")
+col3.metric("EBITDA Margin", f"{ebitda_margin_value:.2f}%")
 
 # -------------------------------
-# SUMMARY TOTALS
+# SHOW TABLE BELOW
 # -------------------------------
-st.subheader("📋 Summary Totals")
-
-col4, col5, col6 = st.columns(3)
-col4.metric("Total Revenue", f"${total_revenue:,.2f}")
-col5.metric("Total Expenses", f"${total_expenses:,.2f}")
-col6.metric("Net Profit", f"${net_profit:,.2f}", delta=f"{(net_profit / total_revenue * 100):.2f}%" if total_revenue else None)
+st.subheader("📋 Profit & Loss Sheet (Preview)")
+st.dataframe(df, use_container_width=True)
 
 # -------------------------------
-# CHARTS
+# OPTIONAL: Chart (if 'Month' or 'Date' exists)
 # -------------------------------
-st.subheader("📈 Income vs Expense Over Time")
-
 time_cols = [c for c in df.columns if "month" in c.lower() or "date" in c.lower()]
-if time_cols:
-    time_col = st.selectbox("Select Time Column:", time_cols)
-    melted = filtered_df.melt(
-        id_vars=[time_col],
-        value_vars=[c for c in amount_cols if "income" in c.lower() or "revenue" in c.lower() or "expense" in c.lower()],
-        var_name="Type",
-        value_name="Amount"
-    )
+amount_cols = [c for c in df.columns if any(x in c.lower() for x in ["income", "revenue", "expense", "profit", "amount"])]
+
+if time_cols and amount_cols:
+    st.subheader("📈 Revenue & Expense Trend")
+    time_col = time_cols[0]
+    melted = df.melt(id_vars=[time_col], value_vars=amount_cols, var_name="Type", value_name="Amount")
+    melted["Amount"] = pd.to_numeric(melted["Amount"].astype(str).str.replace("[^0-9.-]", "", regex=True), errors="coerce")
     chart = (
         alt.Chart(melted)
         .mark_line(point=True)
@@ -131,15 +100,13 @@ if time_cols:
         .properties(height=400)
     )
     st.altair_chart(chart, use_container_width=True)
-else:
-    st.info("No date/month column found for time-based chart.")
 
 # -------------------------------
 # DOWNLOAD OPTION
 # -------------------------------
 st.subheader("⬇️ Download Data")
-csv = filtered_df.to_csv(index=False).encode("utf-8")
-st.download_button("Download Filtered CSV", csv, "filtered_profit_loss.csv", "text/csv")
+csv = df.to_csv(index=False).encode("utf-8")
+st.download_button("Download Sheet CSV", csv, "profit_loss_data.csv", "text/csv")
 
 st.markdown("---")
 st.caption("© 2025 Pioneer Broadband | Live Profit & Loss Dashboard with KPIs")
