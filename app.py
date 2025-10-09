@@ -24,8 +24,12 @@ GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1iiBe4CLYPlr_kpIOuvzx
 # -------------------------------
 @st.cache_data(ttl=300)
 def load_data(sheet_url):
+    """
+    Loads a Google Sheet (headers are in row 2 / index 1).
+    Converts the share link to a CSV export link and returns a DataFrame.
+    """
     csv_url = sheet_url.replace("/edit?usp=sharing", "/export?format=csv")
-    df = pd.read_csv(csv_url)
+    df = pd.read_csv(csv_url, header=1)  # <--- header row is 2nd row in sheet
     df.columns = df.columns.str.strip()
     return df
 
