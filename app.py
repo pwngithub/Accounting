@@ -70,6 +70,49 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+# -------------------------------
+# ADDITIONAL STYLE FIXES FOR THEME VISIBILITY
+# -------------------------------
+extra_css = f"""
+<style>
+/* Sidebar button & dropdown styling */
+div[data-testid="stSidebar"] button {{
+    background-color: {'#e6effa' if not st.session_state['dark_mode'] else '#222222'} !important;
+    color: {text_color} !important;
+    border: 1px solid {border_color} !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    padding: 6px 10px !important;
+}}
+div[data-testid="stSidebar"] button:hover {{
+    background-color: {border_color} !important;
+    color: #ffffff !important;
+}}
+
+/* Fix the select box arrow & text contrast */
+div[data-baseweb="select"] > div {{
+    background-color: {card_bg} !important;
+    color: {text_color} !important;
+    border: 1px solid {border_color} !important;
+}}
+div[data-baseweb="select"] svg {{
+    fill: {text_color} !important;
+}}
+
+/* Download button fix */
+div[data-testid="stDownloadButton"] button {{
+    background-color: {border_color} !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+}}
+div[data-testid="stDownloadButton"] button:hover {{
+    background-color: #003d80 !important;
+    color: #ffffff !important;
+}}
+</style>
+"""
+st.markdown(extra_css, unsafe_allow_html=True)
 
 # -------------------------------
 # GOOGLE SHEETS SETTINGS
