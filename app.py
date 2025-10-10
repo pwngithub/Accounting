@@ -1,13 +1,14 @@
 import streamlit as st
 import pandas as pd
 import requests
+import re
 
 # -------------------------------
 # APP CONFIGURATION
 # -------------------------------
 st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layout="wide")
 st.title("💰 Pioneer Broadband Profit & Loss Dashboard")
-st.caption("Securely synced from Google Sheets via Google Sheets API with monthly tab selection and KPI tracking.")
+st.caption("Auto-detecting Profit & Loss Dashboard synced securely from Google Sheets via the Google Sheets API.")
 
 # -------------------------------
 # GOOGLE SHEETS SETTINGS
@@ -45,11 +46,11 @@ except Exception as e:
     st.stop()
 
 # -------------------------------
-# SMART LOADER
+# LOAD DATA
 # -------------------------------
 @st.cache_data(ttl=300)
 def load_sheet_data(sheet_id, tab_name, api_key):
-    """Fetch data for the selected month/tab and auto-detect header row."""
+    """Fetch data for the selected month/tab and detect the header row dynamically."""
     url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/'{tab_name}'!A1:Z200?key={api_key}"
     resp = requests.get(url)
     if resp.status_code != 200:
@@ -59,33 +60,21 @@ def load_sheet_data(sheet_id, tab_name, api_key):
     if not data:
         raise Exception("No data returned from sheet.")
 
-    # --- Detect header row dynamically ---
+    # Find the header row — first row with at least 3 filled cells
     header_row_idx = None
     for i, row in enumerate(data):
-        filled_cells = sum(1 for c in row if c.strip() != "")
-        if filled_cells >= 3:  # heuristic: likely header row
+        if sum(1 for c in row if c.strip()) >= 3:
             header_row_idx = i
             break
-
     if header_row_idx is None:
-        raise Exception("Could not detect header row in sheet.")
+        raise Exception("Could not find a valid header row.")
 
     header = data[header_row_idx]
     body = data[header_row_idx + 1:]
 
-    # --- Clean header names and remove duplicates ---
+    # Clean up header names
     header = [h.strip() if h else f"Column_{i+1}" for i, h in enumerate(header)]
-    seen = {}
-    unique_header = []
-    for h in header:
-        if h in seen:
-            seen[h] += 1
-            unique_header.append(f"{h}_{seen[h]}")
-        else:
-            seen[h] = 1
-            unique_header.append(h)
-
-    df = pd.DataFrame(body, columns=unique_header)
+    df = pd.DataFrame(body, columns=header)
     return df
 
 try:
@@ -96,24 +85,45 @@ except Exception as e:
     st.stop()
 
 # -------------------------------
-# KPI EXTRACTION
+# AUTO-DETECT KPI ROWS & COLUMNS
 # -------------------------------
-def get_numeric_value(df, row_idx, col_idx):
-    """Safely extracts and cleans a numeric value from a DataFrame cell."""
+def find_row(df, keyword):
+    """Find row index containing the keyword in the first column."""
+    for i, val in enumerate(df.iloc[:, 0].astype(str).str.lower()):
+        if keyword.lower() in val:
+            return i
+    return None
+
+def find_column(df, keyword):
+    """Find column index containing the keyword in the header row."""
+    for i, col in enumerate(df.columns):
+        if re.search(keyword, col, re.IGNORECASE):
+            return i
+    return None
+
+def get_numeric(df, row, col):
+    """Get cleaned numeric value safely."""
     try:
-        raw_value = str(df.iat[row_idx, col_idx])
-        return pd.to_numeric(raw_value.replace(",", "").replace("$", ""), errors="coerce")
+        value = str(df.iat[row, col])
+        return pd.to_numeric(value.replace(",", "").replace("$", ""), errors="coerce")
     except Exception:
         return 0
 
-# KPI data references
-subscriber_count = get_numeric_value(df, 58, 1)  # Row 59, Col B
-mrr_value = get_numeric_value(df, 59, 1)         # Row 60, Col B
-ebitda_value = get_numeric_value(df, 52, 1)      # Row 53, Col B (Monthly EBITDA)
+# Detect columns and rows dynamically
+monthly_col = find_column(df, "month") or 1  # fallback to 2nd column (B)
+ytd_col = find_column(df, "ytd") or monthly_col
 
-# -------------------------------
-# KPI CALCULATIONS
-# -------------------------------
+# Detect specific KPI rows
+ebitda_row = find_row(df, "ebitda")
+subscriber_row = find_row(df, "subscriber")
+mrr_row = find_row(df, "operating revenue")
+
+# Extract values
+ebitda_value = get_numeric(df, ebitda_row, monthly_col) if ebitda_row is not None else 0
+subscriber_count = get_numeric(df, subscriber_row, monthly_col) if subscriber_row is not None else 0
+mrr_value = get_numeric(df, mrr_row, monthly_col) if mrr_row is not None else 0
+
+# Derived metrics
 arpu_value = (mrr_value / subscriber_count) if subscriber_count > 0 else 0
 
 # -------------------------------
@@ -127,11 +137,11 @@ col3.metric("Average Revenue Per User (ARPU)", f"${arpu_value:,.2f}")
 col4.metric("EBITDA", f"${ebitda_value:,.2f}")
 
 if mrr_value == 0:
-    st.warning("⚠️ MRR (Row 60 Col B) may be missing or not numeric.")
+    st.warning("⚠️ Could not detect MRR — check for 'Operating Revenue' in column A.")
 if subscriber_count == 0:
-    st.warning("⚠️ Subscriber count (Row 59 Col B) may be missing or zero.")
+    st.warning("⚠️ Could not detect Subscriber count — check for 'Subscriber' in column A.")
 if ebitda_value == 0:
-    st.warning("⚠️ EBITDA (Row 53 Col B) may be missing or not numeric.")
+    st.warning("⚠️ Could not detect EBITDA — check for 'EBITDA' in column A.")
 
 # -------------------------------
 # DATA TABLE
@@ -147,4 +157,4 @@ csv = df.to_csv(index=False).encode("utf-8")
 st.download_button(f"Download {selected_tab} CSV", csv, f"{selected_tab}_profit_loss.csv", "text/csv")
 
 st.markdown("---")
-st.caption("© 2025 Pioneer Broadband | Multi-Month Profit & Loss Dashboard (Google Sheets API)")
+st.caption("© 2025 Pioneer Broadband | Intelligent Profit & Loss Dashboard (Google Sheets API)")
