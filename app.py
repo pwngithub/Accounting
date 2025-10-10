@@ -144,7 +144,7 @@ mrr_value = get_numeric(df, mrr_row, monthly_col) if mrr_row is not None else 0
 arpu_value = (mrr_value / subscriber_count) if subscriber_count > 0 else 0
 
 # -------------------------------
-# STYLING ENHANCEMENTS
+# STYLING ENHANCEMENTS (HIGH CONTRAST FIX)
 # -------------------------------
 metric_style = """
 <style>
@@ -171,8 +171,8 @@ section[data-testid="stSidebar"], div[data-testid="stVerticalBlock"] {
     background-color: transparent !important;
 }
 </style>
-
-"""st.markdown(metric_style, unsafe_allow_html=True))
+"""
+st.markdown(metric_style, unsafe_allow_html=True)
 
 
 # -------------------------------
