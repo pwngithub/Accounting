@@ -14,8 +14,12 @@ st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layou
 if "dark_mode" not in st.session_state:
     st.session_state["dark_mode"] = False  # default: light mode
 
-if st.sidebar.button("🌓 Toggle Background Theme"):
+# Dynamic toggle label
+toggle_label = "🌙 Switch to Dark Mode" if not st.session_state["dark_mode"] else "☀️ Switch to Light Mode"
+
+if st.sidebar.button(toggle_label):
     st.session_state["dark_mode"] = not st.session_state["dark_mode"]
+    st.rerun()  # instantly refresh the UI with the new theme
 
 # Apply color palette dynamically
 if st.session_state["dark_mode"]:
