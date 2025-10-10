@@ -8,18 +8,65 @@ import re
 # -------------------------------
 st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layout="wide")
 
-# --- Header with fixed logo size and brand divider ---
-logo_url = (
-    "https://images.squarespace-cdn.com/content/v1/651eb4433b13e72c1034f375/"
-    "369c5df0-5363-4827-b041-1add0367f447/PBB+long+logo.png?format=1500w"
+# -------------------------------
+# SIDEBAR: THEME TOGGLE
+# -------------------------------
+if "dark_mode" not in st.session_state:
+    st.session_state["dark_mode"] = False  # default: light mode
+
+# Theme toggle button
+if st.sidebar.button("🌓 Toggle Background Theme"):
+    st.session_state["dark_mode"] = not st.session_state["dark_mode"]
+
+# Apply color settings based on mode
+if st.session_state["dark_mode"]:
+    bg_color = "#000000"
+    text_color = "#FFFFFF"
+    card_bg = "#1c1c1c"
+    border_color = "#1e90ff"
+    logo_url = (
+        "https://images.squarespace-cdn.com/content/v1/651eb4433b13e72c1034f375/"
+        "369c5df0-5363-4827-b041-1add0367f447/PBB+long+logo+white.png?format=1500w"
+    )
+else:
+    bg_color = "#FFFFFF"
+    text_color = "#000000"
+    card_bg = "#ffffff"
+    border_color = "#0056b3"
+    logo_url = (
+        "https://images.squarespace-cdn.com/content/v1/651eb4433b13e72c1034f375/"
+        "369c5df0-5363-4827-b041-1add0367f447/PBB+long+logo.png?format=1500w"
+    )
+
+# Global app-wide background styling
+st.markdown(
+    f"""
+    <style>
+    body {{
+        background-color: {bg_color} !important;
+        color: {text_color} !important;
+    }}
+    [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {{
+        background-color: {bg_color} !important;
+        color: {text_color} !important;
+    }}
+    div[data-testid="stMarkdownContainer"] p, h1, h2, h3, h4, h5, h6 {{
+        color: {text_color} !important;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
+# -------------------------------
+# HEADER SECTION
+# -------------------------------
 st.markdown(
     f"""
     <div style="display:flex;align-items:center;justify-content:flex-start;">
         <img src="{logo_url}" width="258" height="49" style="margin-right:15px;">
     </div>
-    <hr style="height:4px;border:none;background-color:#0056b3;margin-top:0;margin-bottom:20px;">
+    <hr style="height:4px;border:none;background-color:{border_color};margin-top:0;margin-bottom:20px;">
     """,
     unsafe_allow_html=True,
 )
@@ -146,7 +193,7 @@ arpu_value = (mrr_value / subscriber_count) if subscriber_count > 0 else 0
 # -------------------------------
 # KPI SECTION WITH COLORIZED VALUES
 # -------------------------------
-st.markdown(f"<h2 style='color:#0056b3;'>💼 Financial Performance – {selected_tab}</h2>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='color:{border_color};'>💼 Financial Performance – {selected_tab}</h2>", unsafe_allow_html=True)
 col1, col2, col3, col4 = st.columns(4)
 
 def kpi_box(label, value):
@@ -156,17 +203,19 @@ def kpi_box(label, value):
         numeric_val = float(value.replace('$','').replace(',',''))
     except Exception:
         pass
-    color = "#0056b3" if numeric_val is None or numeric_val >= 0 else "red"
+    value_color = border_color if numeric_val is None or numeric_val >= 0 else "red"
+    label_color = text_color
+
     return f"""
     <div style="
-        background-color:#ffffff;
-        border:2px solid #0056b3;
+        background-color:{card_bg};
+        border:2px solid {border_color};
         border-radius:10px;
         padding:14px;
         box-shadow:0px 2px 10px rgba(0, 86, 179, 0.15);
         text-align:center;">
-        <div style="font-weight:600;color:#000000;">{label}</div>
-        <div style="font-size:1.5em;font-weight:700;color:{color};">
+        <div style="font-weight:600;color:{label_color};">{label}</div>
+        <div style="font-size:1.5em;font-weight:700;color:{value_color};">
             {value}
         </div>
     </div>
@@ -181,13 +230,6 @@ col1.markdown(kpi_box("Monthly Recurring Revenue (MRR)", mrr_display), unsafe_al
 col2.markdown(kpi_box("Subscriber Count", subs_display), unsafe_allow_html=True)
 col3.markdown(kpi_box("Average Revenue Per User (ARPU)", arpu_display), unsafe_allow_html=True)
 col4.markdown(kpi_box("EBITDA", ebitda_display), unsafe_allow_html=True)
-
-if mrr_value == 0:
-    st.warning("⚠️ Could not detect MRR — check for 'BroadHub Rev' in column A.")
-if subscriber_count == 0:
-    st.warning("⚠️ Could not detect Subscriber count — check for 'Users Months' in column A.")
-if ebitda_value == 0:
-    st.warning("⚠️ Could not detect EBITDA — check for 'EBITDA' in column A.")
 
 # -------------------------------
 # SIDEBAR OPTION: VIEW DATAFRAME
