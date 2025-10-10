@@ -8,7 +8,6 @@ import re
 # -------------------------------
 st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layout="wide")
 st.title("💰 Pioneer Broadband Profit & Loss Dashboard")
-st.caption("Auto-detecting Profit & Loss Dashboard synced securely from Google Sheets via the Google Sheets API.")
 
 # -------------------------------
 # GOOGLE SHEETS SETTINGS
