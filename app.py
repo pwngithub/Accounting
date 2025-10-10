@@ -7,7 +7,7 @@ import requests
 # -------------------------------
 st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layout="wide")
 st.title("💰 Pioneer Broadband Profit & Loss Dashboard")
-st.caption("Securely synced from Google Sheets via Google Sheets API with monthly tab selection and smart header detection.")
+st.caption("Securely synced from Google Sheets via Google Sheets API with monthly tab selection and KPI tracking.")
 
 # -------------------------------
 # GOOGLE SHEETS SETTINGS
@@ -115,9 +115,7 @@ mrr_value = get_numeric_value(df, 59, 1)
 # KPI CALCULATIONS
 # -------------------------------
 arpu_value = (mrr_value / subscriber_count) if subscriber_count > 0 else 0
-st.sidebar.header("🔧 KPI Inputs")
-ebitda_margin_input = st.sidebar.number_input("EBITDA Margin (%)", min_value=0.0, max_value=100.0, value=0.0)
-ebitda_margin_value = ebitda_margin_input
+ebitda_margin_value = 0.0  # Placeholder; can later be auto-calculated or loaded from sheet
 
 # -------------------------------
 # KPI DISPLAY
