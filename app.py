@@ -95,7 +95,6 @@ except Exception as e:
 # AUTO-DETECT KPI ROWS & COLUMNS
 # -------------------------------
 def find_row(df, keywords):
-    """Find row index containing any keyword in the first column."""
     col_a = df.iloc[:, 0].astype(str).str.lower()
     for kw in keywords:
         match = col_a[col_a.str.contains(kw.lower())]
@@ -104,14 +103,12 @@ def find_row(df, keywords):
     return None
 
 def find_column(df, keyword):
-    """Find column index containing keyword in the header."""
     for i, col in enumerate(df.columns):
         if re.search(keyword, col, re.IGNORECASE):
             return i
     return None
 
 def get_numeric(df, row, col):
-    """Safely extract and clean numeric value."""
     try:
         value = str(df.iat[row, col])
         return pd.to_numeric(value.replace(",", "").replace("$", ""), errors="coerce")
@@ -134,9 +131,9 @@ mrr_value = get_numeric(df, mrr_row, monthly_col) if mrr_row is not None else 0
 arpu_value = (mrr_value / subscriber_count) if subscriber_count > 0 else 0
 
 # -------------------------------
-# KPI DISPLAY
+# KPI DISPLAY (RENAMED)
 # -------------------------------
-st.header(f"📊 Key Performance Indicators – {selected_tab}")
+st.header(f"💼 Financial Performance – {selected_tab}")
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Monthly Recurring Revenue (MRR)", f"${mrr_value:,.2f}")
 col2.metric("Subscriber Count", f"{subscriber_count:,.0f}")
@@ -154,7 +151,6 @@ if ebitda_value == 0:
 # DATA TABLE
 # -------------------------------
 st.subheader(f"📋 Profit & Loss Sheet Preview – {selected_tab}")
-# Duplicate column protection before rendering
 if df.columns.duplicated().any():
     df.columns = [
         f"{col}_{i+1}" if df.columns.tolist().count(col) > 1 else col
