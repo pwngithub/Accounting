@@ -109,13 +109,7 @@ def get_numeric_value(df, row_idx, col_idx):
 # KPI data references
 subscriber_count = get_numeric_value(df, 58, 1)  # Row 59, Col B
 mrr_value = get_numeric_value(df, 59, 1)         # Row 60, Col B
-
-# EBITDA calculation = sum of (row 53, col 1) + (row 49, col 1) + (row 31, col 1)
-ebitda_value = (
-    get_numeric_value(df, 52, 1) +
-    get_numeric_value(df, 48, 1) +
-    get_numeric_value(df, 30, 1)
-)
+ebitda_value = get_numeric_value(df, 52, 1)      # Row 53, Col B (Monthly EBITDA)
 
 # -------------------------------
 # KPI CALCULATIONS
@@ -136,6 +130,8 @@ if mrr_value == 0:
     st.warning("⚠️ MRR (Row 60 Col B) may be missing or not numeric.")
 if subscriber_count == 0:
     st.warning("⚠️ Subscriber count (Row 59 Col B) may be missing or zero.")
+if ebitda_value == 0:
+    st.warning("⚠️ EBITDA (Row 53 Col B) may be missing or not numeric.")
 
 # -------------------------------
 # DATA TABLE
