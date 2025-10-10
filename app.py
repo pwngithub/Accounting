@@ -106,16 +106,21 @@ def get_numeric_value(df, row_idx, col_idx):
     except Exception:
         return 0
 
-# Row 59 (index 58) = Subscribers
-# Row 60 (index 59) = MRR
-subscriber_count = get_numeric_value(df, 58, 1)
-mrr_value = get_numeric_value(df, 59, 1)
+# KPI data references
+subscriber_count = get_numeric_value(df, 58, 1)  # Row 59, Col B
+mrr_value = get_numeric_value(df, 59, 1)         # Row 60, Col B
+
+# EBITDA calculation = sum of (row 53, col 1) + (row 49, col 1) + (row 31, col 1)
+ebitda_value = (
+    get_numeric_value(df, 52, 1) +
+    get_numeric_value(df, 48, 1) +
+    get_numeric_value(df, 30, 1)
+)
 
 # -------------------------------
 # KPI CALCULATIONS
 # -------------------------------
 arpu_value = (mrr_value / subscriber_count) if subscriber_count > 0 else 0
-ebitda_margin_value = 0.0  # Placeholder; can later be auto-calculated or loaded from sheet
 
 # -------------------------------
 # KPI DISPLAY
@@ -125,7 +130,7 @@ col1, col2, col3, col4 = st.columns(4)
 col1.metric("Monthly Recurring Revenue (MRR)", f"${mrr_value:,.2f}")
 col2.metric("Subscriber Count", f"{subscriber_count:,.0f}")
 col3.metric("Average Revenue Per User (ARPU)", f"${arpu_value:,.2f}")
-col4.metric("EBITDA Margin", f"{ebitda_margin_value:.2f}%")
+col4.metric("EBITDA", f"${ebitda_value:,.2f}")
 
 if mrr_value == 0:
     st.warning("⚠️ MRR (Row 60 Col B) may be missing or not numeric.")
