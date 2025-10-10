@@ -8,19 +8,19 @@ import re
 # -------------------------------
 st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layout="wide")
 
-# --- Header: Logo + Title ---
+# --- Header: Logo only, with brand-colored divider ---
 logo_url = (
     "https://images.squarespace-cdn.com/content/v1/651eb4433b13e72c1034f375/"
     "369c5df0-5363-4827-b041-1add0367f447/PBB+long+logo.png?format=1500w"
 )
 
-col_logo, col_title = st.columns([1, 4])  # Adjust width ratio for alignment
-with col_logo:
-    st.image(logo_url, use_container_width=True)
-with col_title:
-    st.title("💰 Pioneer Broadband Profit & Loss Dashboard")
-
-st.markdown("---")  # Horizontal divider for clean visual separation
+st.image(logo_url, use_container_width=True)
+st.markdown(
+    """
+    <hr style="height:4px;border:none;background-color:#0056b3;margin-top:0;margin-bottom:20px;">
+    """,
+    unsafe_allow_html=True,
+)
 
 # -------------------------------
 # GOOGLE SHEETS SETTINGS
