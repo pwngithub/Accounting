@@ -250,8 +250,13 @@ div[data-baseweb="select"] > div {{
     border: 1.5px solid {border_color} !important;
     border-radius: 6px !important;
 }}
-div[data-baseweb="select"] svg {{
-    fill: {text_color} !important;
+div[data-baseweb="select"] svg,
+section[data-testid="stSidebar"] svg,
+section[data-testid="stSidebar"] path {{
+    fill: {'#0056b3' if not st.session_state['dark_mode'] else '#ffffff'} !important;
+}}
+div[data-baseweb="select"] div {{
+    color: {text_color} !important;
 }}
 
 /* === Download button styling === */
@@ -270,7 +275,6 @@ div[data-testid="stDownloadButton"] button:hover {{
 </style>
 """
 st.markdown(extra_css, unsafe_allow_html=True)
-
 
 st.markdown("---")
 st.caption("© 2025 Pioneer Broadband")
