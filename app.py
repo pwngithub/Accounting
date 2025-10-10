@@ -178,17 +178,16 @@ st.markdown(metric_style, unsafe_allow_html=True)
 # -------------------------------
 # FINANCIAL PERFORMANCE SECTION
 # -------------------------------
+# -------------------------------
+# FINANCIAL PERFORMANCE SECTION
+# -------------------------------
 st.markdown(f"<h2 style='color:#0056b3;'>💼 Financial Performance – {selected_tab}</h2>", unsafe_allow_html=True)
 col1, col2, col3, col4 = st.columns(4)
 
-col1.metric("Monthly Recurring Revenue (MRR)", f"${mrr_value:,.2f}")
-col2.metric("Subscriber Count", f"{subscriber_count:,.0f}")
-col3.metric("Average Revenue Per User (ARPU)", f"${arpu_value:,.2f}")
-
-# Format EBITDA with color for negative values
-ebitda_color = "red" if ebitda_value < 0 else "black"
-col4.markdown(
-    f"""
+# --- Helper function for colorized KPI boxes ---
+def kpi_box(label, value):
+    color = "#0056b3" if value >= 0 else "red"
+    return f"""
     <div style="
         background-color:#ffffff;
         border:2px solid #0056b3;
@@ -196,14 +195,25 @@ col4.markdown(
         padding:14px;
         box-shadow:0px 2px 10px rgba(0, 86, 179, 0.15);
         text-align:center;">
-        <div style="font-weight:600;color:#000000;">EBITDA</div>
-        <div style="font-size:1.5em;font-weight:700;color:{ebitda_color};">
-            ${ebitda_value:,.2f}
+        <div style="font-weight:600;color:#000000;">{label}</div>
+        <div style="font-size:1.5em;font-weight:700;color:{color};">
+            {value}
         </div>
     </div>
-    """,
-    unsafe_allow_html=True,
-)
+    """
+
+# Format all values
+mrr_display = f"${mrr_value:,.2f}"
+subs_display = f"{subscriber_count:,.0f}"
+arpu_display = f"${arpu_value:,.2f}"
+ebitda_display = f"${ebitda_value:,.2f}"
+
+# Render colorized KPI boxes
+col1.markdown(kpi_box("Monthly Recurring Revenue (MRR)", mrr_display), unsafe_allow_html=True)
+col2.markdown(kpi_box("Subscriber Count", subs_display), unsafe_allow_html=True)
+col3.markdown(kpi_box("Average Revenue Per User (ARPU)", arpu_display), unsafe_allow_html=True)
+col4.markdown(kpi_box("EBITDA", ebitda_display), unsafe_allow_html=True)
+
 
 if mrr_value == 0:
     st.warning("⚠️ Could not detect MRR — check for 'BroadHub Rev' in column A.")
