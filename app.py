@@ -85,7 +85,7 @@ def load_sheet_data(sheet_id, tab_name, api_key):
 
 try:
     df = load_sheet_data(SHEET_ID, selected_tab, API_KEY)
-    st.success(f"✅ Loaded data for **{selected_tab}**")
+    # (intentionally no success banner for clean UI)
 except Exception as e:
     st.error(f"❌ Failed to load data for {selected_tab}: {e}")
     st.stop()
