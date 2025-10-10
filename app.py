@@ -148,22 +148,31 @@ arpu_value = (mrr_value / subscriber_count) if subscriber_count > 0 else 0
 # -------------------------------
 metric_style = """
 <style>
+/* Force readable KPI metric boxes */
 div[data-testid="stMetric"] {
-    background-color: #ffffff !important;
-    border: 1.5px solid #0056b3 !important;
-    border-radius: 10px;
-    padding: 15px !important;
-    box-shadow: 0 2px 8px rgba(0, 86, 179, 0.1);
-    color: #000000 !important;
+    background-color: #ffffff !important;      /* pure white background */
+    border: 2px solid #0056b3 !important;      /* Pioneer blue border */
+    border-radius: 10px !important;
+    padding: 14px !important;
+    box-shadow: 0px 2px 10px rgba(0, 86, 179, 0.15) !important;
+    color: #000000 !important;                 /* force black text */
 }
+
+/* Ensure metric labels and values are visible */
 div[data-testid="stMetric"] > label, 
-div[data-testid="stMetric"] span {
+div[data-testid="stMetric"] span, 
+div[data-testid="stMetric"] div {
     color: #000000 !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
+}
+
+/* Fix Streamlit’s internal gray overlay in light theme */
+section[data-testid="stSidebar"], div[data-testid="stVerticalBlock"] {
+    background-color: transparent !important;
 }
 </style>
 """
-st.markdown(metric_style, unsafe_allow_html=True)
+st.markdown(metric_style, unsafe_allow_html=True))
 
 # -------------------------------
 # FINANCIAL PERFORMANCE SECTION
