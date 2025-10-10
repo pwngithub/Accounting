@@ -2,13 +2,14 @@ import streamlit as st
 import pandas as pd
 import requests
 import re
+from streamlit_autorefresh import st_autorefresh  # optional live refresh support
 
 # -------------------------------
 # APP CONFIGURATION
 # -------------------------------
 st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layout="wide")
 
-# --- Header: fixed-size logo + Pioneer-blue divider ---
+# --- Header with fixed logo size and brand divider ---
 logo_url = (
     "https://images.squarespace-cdn.com/content/v1/651eb4433b13e72c1034f375/"
     "369c5df0-5363-4827-b041-1add0367f447/PBB+long+logo.png?format=1500w"
@@ -16,8 +17,8 @@ logo_url = (
 
 st.markdown(
     f"""
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <img src="{logo_url}" width="258" height="49" alt="Pioneer Broadband Logo">
+    <div style="display:flex;align-items:center;justify-content:flex-start;">
+        <img src="{logo_url}" width="258" height="49" style="margin-right:15px;">
     </div>
     <hr style="height:4px;border:none;background-color:#0056b3;margin-top:0;margin-bottom:20px;">
     """,
@@ -144,14 +145,35 @@ mrr_value = get_numeric(df, mrr_row, monthly_col) if mrr_row is not None else 0
 arpu_value = (mrr_value / subscriber_count) if subscriber_count > 0 else 0
 
 # -------------------------------
+# STYLING ENHANCEMENTS
+# -------------------------------
+metric_style = """
+<style>
+div[data-testid="stMetric"] {
+    background-color: #f8fafc;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 1px 1px 4px rgba(0,0,0,0.05);
+}
+</style>
+"""
+st.markdown(metric_style, unsafe_allow_html=True)
+
+# -------------------------------
 # FINANCIAL PERFORMANCE SECTION
 # -------------------------------
-st.header(f"💼 Financial Performance – {selected_tab}")
+st.markdown(f"<h2 style='color:#0056b3;'>💼 Financial Performance – {selected_tab}</h2>", unsafe_allow_html=True)
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Monthly Recurring Revenue (MRR)", f"${mrr_value:,.2f}")
 col2.metric("Subscriber Count", f"{subscriber_count:,.0f}")
 col3.metric("Average Revenue Per User (ARPU)", f"${arpu_value:,.2f}")
-col4.metric("EBITDA", f"${ebitda_value:,.2f}")
+col4.metric(
+    "EBITDA",
+    f"${ebitda_value:,.2f}",
+    delta="↑" if ebitda_value > 0 else "↓",
+    delta_color="normal"
+)
 
 if mrr_value == 0:
     st.warning("⚠️ Could not detect MRR — check for 'BroadHub Rev' in column A.")
