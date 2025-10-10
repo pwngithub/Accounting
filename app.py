@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import requests
 import re
-from streamlit_autorefresh import st_autorefresh  # optional live refresh support
 
 # -------------------------------
 # APP CONFIGURATION
