@@ -171,8 +171,9 @@ section[data-testid="stSidebar"], div[data-testid="stVerticalBlock"] {
     background-color: transparent !important;
 }
 </style>
-"""
-st.markdown(metric_style, unsafe_allow_html=True))
+
+"""st.markdown(metric_style, unsafe_allow_html=True))
+
 
 # -------------------------------
 # FINANCIAL PERFORMANCE SECTION
