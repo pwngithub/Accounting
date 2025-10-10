@@ -216,7 +216,7 @@ csv = df.to_csv(index=False).encode("utf-8")
 st.download_button(f"Download {selected_tab} CSV", csv, f"{selected_tab}_profit_loss.csv", "text/csv")
 
 # -------------------------------
-# FIX: SIDEBAR + BUTTON COLORS
+# FIX: SIDEBAR + BUTTON COLORS (VISIBLE IN BOTH THEMES)
 # -------------------------------
 extra_css = f"""
 <style>
@@ -224,19 +224,26 @@ section[data-testid="stSidebar"] {{
     background-color: {bg_color} !important;
     color: {text_color} !important;
 }}
+
+/* === Toggle Background Theme button === */
 section[data-testid="stSidebar"] div.stButton > button {{
-    background-color: {'#f0f6ff' if not st.session_state['dark_mode'] else '#222222'} !important;
-    color: {text_color} !important;
+    background-color: {'#ffffff' if not st.session_state['dark_mode'] else '#222222'} !important;
+    color: {'#0056b3' if not st.session_state['dark_mode'] else '#ffffff'} !important;
     border: 2px solid {border_color} !important;
-    border-radius: 6px !important;
-    font-weight: 600 !important;
+    border-radius: 8px !important;
+    font-weight: 700 !important;
     width: 100% !important;
-    box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
+    padding: 0.6em 1em !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: all 0.2s ease-in-out;
 }}
 section[data-testid="stSidebar"] div.stButton > button:hover {{
     background-color: {border_color} !important;
     color: #ffffff !important;
+    transform: scale(1.02);
 }}
+
+/* === Month dropdown styling === */
 div[data-baseweb="select"] > div {{
     background-color: {card_bg} !important;
     color: {text_color} !important;
@@ -246,6 +253,8 @@ div[data-baseweb="select"] > div {{
 div[data-baseweb="select"] svg {{
     fill: {text_color} !important;
 }}
+
+/* === Download button styling === */
 div[data-testid="stDownloadButton"] button {{
     background-color: {border_color} !important;
     color: #ffffff !important;
@@ -261,6 +270,7 @@ div[data-testid="stDownloadButton"] button:hover {{
 </style>
 """
 st.markdown(extra_css, unsafe_allow_html=True)
+
 
 st.markdown("---")
 st.caption("© 2025 Pioneer Broadband")
