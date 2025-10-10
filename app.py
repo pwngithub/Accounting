@@ -8,7 +8,7 @@ import re
 # -------------------------------
 st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layout="wide")
 st.title("💰 Pioneer Broadband Profit & Loss Dashboard")
-st.caption("Auto-detecting Profit & Loss Dashboard synced securely from Google Sheets via the Google Sheets API.")
+st.caption("Auto-detecting Profit & Loss Dashboard synced securely from Google Sheets via Google Sheets API.")
 
 # -------------------------------
 # GOOGLE SHEETS SETTINGS
@@ -87,11 +87,13 @@ except Exception as e:
 # -------------------------------
 # AUTO-DETECT KPI ROWS & COLUMNS
 # -------------------------------
-def find_row(df, keyword):
-    """Find row index containing the keyword in the first column."""
-    for i, val in enumerate(df.iloc[:, 0].astype(str).str.lower()):
-        if keyword.lower() in val:
-            return i
+def find_row(df, keywords):
+    """Find row index containing any of the given keywords in the first column."""
+    col_a = df.iloc[:, 0].astype(str).str.lower()
+    for kw in keywords:
+        match = col_a[col_a.str.contains(kw.lower())]
+        if not match.empty:
+            return match.index[0]
     return None
 
 def find_column(df, keyword):
@@ -113,10 +115,10 @@ def get_numeric(df, row, col):
 monthly_col = find_column(df, "month") or 1  # fallback to 2nd column (B)
 ytd_col = find_column(df, "ytd") or monthly_col
 
-# Detect specific KPI rows
-ebitda_row = find_row(df, "ebitda")
-subscriber_row = find_row(df, "subscriber")
-mrr_row = find_row(df, "operating revenue")
+# Detect specific KPI rows using Pioneer’s naming
+ebitda_row = find_row(df, ["ebitda"])
+subscriber_row = find_row(df, ["users months", "user months"])
+mrr_row = find_row(df, ["broadhub rev", "broadhub revenue", "broadhub"])
 
 # Extract values
 ebitda_value = get_numeric(df, ebitda_row, monthly_col) if ebitda_row is not None else 0
@@ -137,9 +139,9 @@ col3.metric("Average Revenue Per User (ARPU)", f"${arpu_value:,.2f}")
 col4.metric("EBITDA", f"${ebitda_value:,.2f}")
 
 if mrr_value == 0:
-    st.warning("⚠️ Could not detect MRR — check for 'Operating Revenue' in column A.")
+    st.warning("⚠️ Could not detect MRR — check for 'BroadHub Rev' in column A.")
 if subscriber_count == 0:
-    st.warning("⚠️ Could not detect Subscriber count — check for 'Subscriber' in column A.")
+    st.warning("⚠️ Could not detect Subscriber count — check for 'Users Months' in column A.")
 if ebitda_value == 0:
     st.warning("⚠️ Could not detect EBITDA — check for 'EBITDA' in column A.")
 
