@@ -131,7 +131,7 @@ mrr_value = get_numeric(df, mrr_row, monthly_col) if mrr_row is not None else 0
 arpu_value = (mrr_value / subscriber_count) if subscriber_count > 0 else 0
 
 # -------------------------------
-# KPI DISPLAY (RENAMED)
+# FINANCIAL PERFORMANCE SECTION
 # -------------------------------
 st.header(f"💼 Financial Performance – {selected_tab}")
 col1, col2, col3, col4 = st.columns(4)
@@ -148,15 +148,19 @@ if ebitda_value == 0:
     st.warning("⚠️ Could not detect EBITDA — check for 'EBITDA' in column A.")
 
 # -------------------------------
-# DATA TABLE
+# SIDEBAR OPTION: VIEW DATAFRAME
 # -------------------------------
-st.subheader(f"📋 Profit & Loss Sheet Preview – {selected_tab}")
-if df.columns.duplicated().any():
-    df.columns = [
-        f"{col}_{i+1}" if df.columns.tolist().count(col) > 1 else col
-        for i, col in enumerate(df.columns)
-    ]
-st.dataframe(df, use_container_width=True)
+st.sidebar.markdown("---")
+show_df = st.sidebar.checkbox("📋 Show Profit & Loss Sheet Preview", value=False)
+
+if show_df:
+    st.subheader(f"📋 Profit & Loss Sheet Preview – {selected_tab}")
+    if df.columns.duplicated().any():
+        df.columns = [
+            f"{col}_{i+1}" if df.columns.tolist().count(col) > 1 else col
+            for i, col in enumerate(df.columns)
+        ]
+    st.dataframe(df, use_container_width=True)
 
 # -------------------------------
 # DOWNLOAD BUTTON
