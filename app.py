@@ -7,6 +7,12 @@ import re
 # APP CONFIGURATION
 # -------------------------------
 st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layout="wide")
+
+# --- Logo at the top ---
+logo_url = "https://images.squarespace-cdn.com/content/v1/651eb4433b13e72c1034f375/369c5df0-5363-4827-b041-1add0367f447/PBB+long+logo.png?format=1500w"
+st.image(logo_url, use_column_width=True)
+
+# --- Title ---
 st.title("💰 Pioneer Broadband Profit & Loss Dashboard")
 
 # -------------------------------
@@ -85,7 +91,6 @@ def load_sheet_data(sheet_id, tab_name, api_key):
 
 try:
     df = load_sheet_data(SHEET_ID, selected_tab, API_KEY)
-    # (intentionally no success banner for clean UI)
 except Exception as e:
     st.error(f"❌ Failed to load data for {selected_tab}: {e}")
     st.stop()
@@ -169,4 +174,4 @@ csv = df.to_csv(index=False).encode("utf-8")
 st.download_button(f"Download {selected_tab} CSV", csv, f"{selected_tab}_profit_loss.csv", "text/csv")
 
 st.markdown("---")
-st.caption("© 2025 Pioneer Broadband | Intelligent Profit & Loss Dashboard (Google Sheets API)")
+st.caption("© 2025 Pioneer Broadband")
