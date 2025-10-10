@@ -14,16 +14,14 @@ st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layou
 if "dark_mode" not in st.session_state:
     st.session_state["dark_mode"] = False  # default: light mode
 
-# Dynamic label for sidebar toggle
+# Dynamic toggle label
 toggle_label = "🌙 Switch to Dark Mode" if not st.session_state["dark_mode"] else "☀️ Switch to Light Mode"
 
 if st.sidebar.button(toggle_label):
     st.session_state["dark_mode"] = not st.session_state["dark_mode"]
-    st.rerun()
+    st.rerun()  # instantly refresh the UI with the new theme
 
-# -------------------------------
-# COLORS & LOGO SETTINGS
-# -------------------------------
+# Apply color palette dynamically
 if st.session_state["dark_mode"]:
     bg_color = "#000000"
     text_color = "#FFFFFF"
@@ -33,8 +31,6 @@ if st.session_state["dark_mode"]:
         "https://images.squarespace-cdn.com/content/v1/651eb4433b13e72c1034f375/"
         "369c5df0-5363-4827-b041-1add0367f447/PBB+long+logo+white.png?format=1500w"
     )
-    float_button_bg = "#1e90ff"
-    float_button_text = "#ffffff"
 else:
     bg_color = "#FFFFFF"
     text_color = "#000000"
@@ -44,11 +40,9 @@ else:
         "https://images.squarespace-cdn.com/content/v1/651eb4433b13e72c1034f375/"
         "369c5df0-5363-4827-b041-1add0367f447/PBB+long+logo.png?format=1500w"
     )
-    float_button_bg = "#0056b3"
-    float_button_text = "#ffffff"
 
 # -------------------------------
-# PAGE BACKGROUND + ANIMATION
+# GLOBAL BACKGROUND + FADE TRANSITION
 # -------------------------------
 st.markdown(
     f"""
@@ -226,56 +220,65 @@ csv = df.to_csv(index=False).encode("utf-8")
 st.download_button(f"Download {selected_tab} CSV", csv, f"{selected_tab}_profit_loss.csv", "text/csv")
 
 # -------------------------------
-# FLOATING THEME TOGGLE BUTTON
+# FIX: SIDEBAR + BUTTON COLORS (VISIBLE IN BOTH THEMES)
 # -------------------------------
-float_label = "☀️ Light Mode" if st.session_state["dark_mode"] else "🌙 Dark Mode"
-float_action = "light" if st.session_state["dark_mode"] else "dark"
+extra_css = f"""
+<style>
+section[data-testid="stSidebar"] {{
+    background-color: {bg_color} !important;
+    color: {text_color} !important;
+}}
 
-st.markdown(
-    f"""
-    <div style="
-        position: fixed;
-        top: 15px;
-        right: 20px;
-        z-index: 9999;
-        background-color: {float_button_bg};
-        color: {float_button_text};
-        border-radius: 20px;
-        padding: 6px 12px;
-        font-weight: 600;
-        font-size: 14px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-        cursor: pointer;
-        transition: 0.3s ease;
-    "
-    onclick="window.parent.postMessage({{'theme_toggle': true}}, '*')">
-        {float_label}
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+/* === Toggle Background Theme button === */
+section[data-testid="stSidebar"] div.stButton > button {{
+    background-color: {'#ffffff' if not st.session_state['dark_mode'] else '#222222'} !important;
+    color: {'#0056b3' if not st.session_state['dark_mode'] else '#ffffff'} !important;
+    border: 2px solid {border_color} !important;
+    border-radius: 8px !important;
+    font-weight: 700 !important;
+    width: 100% !important;
+    padding: 0.6em 1em !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: all 0.2s ease-in-out;
+}}
+section[data-testid="stSidebar"] div.stButton > button:hover {{
+    background-color: {border_color} !important;
+    color: #ffffff !important;
+    transform: scale(1.02);
+}}
 
-# Inject JS listener to rerun theme toggle
-st.components.v1.html(
-    """
-    <script>
-    window.addEventListener('message', (event) => {
-        if (event.data.theme_toggle) {
-            const streamlitSend = window.parent.Streamlit;
-            if (streamlitSend && streamlitSend.setComponentValue) {
-                streamlitSend.setComponentValue(true);
-            } else {
-                window.parent.location.reload();
-            }
-        }
-    });
-    </script>
-    """,
-    height=0,
-)
+/* === Month dropdown styling === */
+div[data-baseweb="select"] > div {{
+    background-color: {card_bg} !important;
+    color: {text_color} !important;
+    border: 1.5px solid {border_color} !important;
+    border-radius: 6px !important;
+}}
+div[data-baseweb="select"] svg,
+section[data-testid="stSidebar"] svg,
+section[data-testid="stSidebar"] path {{
+    fill: {'#0056b3' if not st.session_state['dark_mode'] else '#ffffff'} !important;
+}}
+div[data-baseweb="select"] div {{
+    color: {text_color} !important;
+}}
 
-# -------------------------------
-# FOOTER
-# -------------------------------
+/* === Download button styling === */
+div[data-testid="stDownloadButton"] button {{
+    background-color: {border_color} !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    border: none !important;
+    padding: 0.6em 1.2em !important;
+}}
+div[data-testid="stDownloadButton"] button:hover {{
+    background-color: #004080 !important;
+    color: #ffffff !important;
+}}
+</style>
+"""
+st.markdown(extra_css, unsafe_allow_html=True)
+
 st.markdown("---")
 st.caption("© 2025 Pioneer Broadband")
