@@ -149,11 +149,17 @@ arpu_value = (mrr_value / subscriber_count) if subscriber_count > 0 else 0
 metric_style = """
 <style>
 div[data-testid="stMetric"] {
-    background-color: #f8fafc;
-    border: 1px solid #e0e0e0;
-    border-radius: 12px;
-    padding: 12px;
-    box-shadow: 1px 1px 4px rgba(0,0,0,0.05);
+    background-color: #ffffff !important;
+    border: 1.5px solid #0056b3 !important;
+    border-radius: 10px;
+    padding: 15px !important;
+    box-shadow: 0 2px 8px rgba(0, 86, 179, 0.1);
+    color: #000000 !important;
+}
+div[data-testid="stMetric"] > label, 
+div[data-testid="stMetric"] span {
+    color: #000000 !important;
+    font-weight: 600 !important;
 }
 </style>
 """
