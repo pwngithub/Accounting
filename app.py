@@ -180,14 +180,29 @@ st.markdown(metric_style, unsafe_allow_html=True)
 # -------------------------------
 st.markdown(f"<h2 style='color:#0056b3;'>💼 Financial Performance – {selected_tab}</h2>", unsafe_allow_html=True)
 col1, col2, col3, col4 = st.columns(4)
+
 col1.metric("Monthly Recurring Revenue (MRR)", f"${mrr_value:,.2f}")
 col2.metric("Subscriber Count", f"{subscriber_count:,.0f}")
 col3.metric("Average Revenue Per User (ARPU)", f"${arpu_value:,.2f}")
-col4.metric(
-    "EBITDA",
-    f"${ebitda_value:,.2f}",
-    delta="↑" if ebitda_value > 0 else "↓",
-    delta_color="normal"
+
+# Format EBITDA with color for negative values
+ebitda_color = "red" if ebitda_value < 0 else "black"
+col4.markdown(
+    f"""
+    <div style="
+        background-color:#ffffff;
+        border:2px solid #0056b3;
+        border-radius:10px;
+        padding:14px;
+        box-shadow:0px 2px 10px rgba(0, 86, 179, 0.15);
+        text-align:center;">
+        <div style="font-weight:600;color:#000000;">EBITDA</div>
+        <div style="font-size:1.5em;font-weight:700;color:{ebitda_color};">
+            ${ebitda_value:,.2f}
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
 if mrr_value == 0:
