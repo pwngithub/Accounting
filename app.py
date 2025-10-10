@@ -144,49 +144,19 @@ mrr_value = get_numeric(df, mrr_row, monthly_col) if mrr_row is not None else 0
 arpu_value = (mrr_value / subscriber_count) if subscriber_count > 0 else 0
 
 # -------------------------------
-# STYLING ENHANCEMENTS (HIGH CONTRAST FIX)
-# -------------------------------
-metric_style = """
-<style>
-/* Force readable KPI metric boxes */
-div[data-testid="stMetric"] {
-    background-color: #ffffff !important;      /* pure white background */
-    border: 2px solid #0056b3 !important;      /* Pioneer blue border */
-    border-radius: 10px !important;
-    padding: 14px !important;
-    box-shadow: 0px 2px 10px rgba(0, 86, 179, 0.15) !important;
-    color: #000000 !important;                 /* force black text */
-}
-
-/* Ensure metric labels and values are visible */
-div[data-testid="stMetric"] > label, 
-div[data-testid="stMetric"] span, 
-div[data-testid="stMetric"] div {
-    color: #000000 !important;
-    font-weight: 700 !important;
-}
-
-/* Fix Streamlit’s internal gray overlay in light theme */
-section[data-testid="stSidebar"], div[data-testid="stVerticalBlock"] {
-    background-color: transparent !important;
-}
-</style>
-"""
-st.markdown(metric_style, unsafe_allow_html=True)
-
-
-# -------------------------------
-# FINANCIAL PERFORMANCE SECTION
-# -------------------------------
-# -------------------------------
-# FINANCIAL PERFORMANCE SECTION
+# KPI SECTION WITH COLORIZED VALUES
 # -------------------------------
 st.markdown(f"<h2 style='color:#0056b3;'>💼 Financial Performance – {selected_tab}</h2>", unsafe_allow_html=True)
 col1, col2, col3, col4 = st.columns(4)
 
-# --- Helper function for colorized KPI boxes ---
 def kpi_box(label, value):
-    color = "#0056b3" if value >= 0 else "red"
+    # Convert value to numeric if possible
+    numeric_val = None
+    try:
+        numeric_val = float(value.replace('$','').replace(',',''))
+    except Exception:
+        pass
+    color = "#0056b3" if numeric_val is None or numeric_val >= 0 else "red"
     return f"""
     <div style="
         background-color:#ffffff;
@@ -202,18 +172,15 @@ def kpi_box(label, value):
     </div>
     """
 
-# Format all values
 mrr_display = f"${mrr_value:,.2f}"
 subs_display = f"{subscriber_count:,.0f}"
 arpu_display = f"${arpu_value:,.2f}"
 ebitda_display = f"${ebitda_value:,.2f}"
 
-# Render colorized KPI boxes
 col1.markdown(kpi_box("Monthly Recurring Revenue (MRR)", mrr_display), unsafe_allow_html=True)
 col2.markdown(kpi_box("Subscriber Count", subs_display), unsafe_allow_html=True)
 col3.markdown(kpi_box("Average Revenue Per User (ARPU)", arpu_display), unsafe_allow_html=True)
 col4.markdown(kpi_box("EBITDA", ebitda_display), unsafe_allow_html=True)
-
 
 if mrr_value == 0:
     st.warning("⚠️ Could not detect MRR — check for 'BroadHub Rev' in column A.")
