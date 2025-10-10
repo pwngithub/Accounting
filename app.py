@@ -8,7 +8,7 @@ import re
 # -------------------------------
 st.set_page_config(page_title="Profit & Loss Dashboard", page_icon="💰", layout="wide")
 st.title("💰 Pioneer Broadband Profit & Loss Dashboard")
-st.caption("Auto-detecting Profit & Loss Dashboard synced securely from Google Sheets via Google Sheets API.")
+st.caption("Auto-detecting Profit & Loss Dashboard synced securely from Google Sheets via the Google Sheets API.")
 
 # -------------------------------
 # GOOGLE SHEETS SETTINGS
@@ -27,7 +27,6 @@ except Exception:
 # -------------------------------
 @st.cache_data(ttl=300)
 def get_sheet_tabs(sheet_id, api_key):
-    """Retrieve all sheet/tab names from the Google Sheet."""
     meta_url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}?key={api_key}"
     resp = requests.get(meta_url)
     if resp.status_code != 200:
@@ -37,10 +36,10 @@ def get_sheet_tabs(sheet_id, api_key):
 
 try:
     sheet_names = get_sheet_tabs(SHEET_ID, API_KEY)
-    month_tabs = [name for name in sheet_names if name.startswith("25.")]
+    month_tabs = [n for n in sheet_names if n.startswith("25.")]
     if not month_tabs:
         month_tabs = sheet_names
-    selected_tab = st.sidebar.selectbox("📅 Select Month", month_tabs, index=len(month_tabs)-1)
+    selected_tab = st.sidebar.selectbox("📅 Select Month", month_tabs, index=len(month_tabs) - 1)
 except Exception as e:
     st.error(f"❌ Could not fetch sheet tabs: {e}")
     st.stop()
@@ -50,7 +49,6 @@ except Exception as e:
 # -------------------------------
 @st.cache_data(ttl=300)
 def load_sheet_data(sheet_id, tab_name, api_key):
-    """Fetch data for the selected month/tab and detect the header row dynamically."""
     url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/'{tab_name}'!A1:Z200?key={api_key}"
     resp = requests.get(url)
     if resp.status_code != 200:
@@ -60,7 +58,7 @@ def load_sheet_data(sheet_id, tab_name, api_key):
     if not data:
         raise Exception("No data returned from sheet.")
 
-    # Find the header row — first row with at least 3 filled cells
+    # --- find header row ---
     header_row_idx = None
     for i, row in enumerate(data):
         if sum(1 for c in row if c.strip()) >= 3:
@@ -72,9 +70,18 @@ def load_sheet_data(sheet_id, tab_name, api_key):
     header = data[header_row_idx]
     body = data[header_row_idx + 1:]
 
-    # Clean up header names
     header = [h.strip() if h else f"Column_{i+1}" for i, h in enumerate(header)]
     df = pd.DataFrame(body, columns=header)
+
+    # --- ensure unique column names ---
+    if df.columns.duplicated().any():
+        seen = {}
+        new_cols = []
+        for col in df.columns:
+            seen[col] = seen.get(col, 0) + 1
+            new_cols.append(col if seen[col] == 1 else f"{col}_{seen[col]}")
+        df.columns = new_cols
+
     return df
 
 try:
@@ -88,7 +95,7 @@ except Exception as e:
 # AUTO-DETECT KPI ROWS & COLUMNS
 # -------------------------------
 def find_row(df, keywords):
-    """Find row index containing any of the given keywords in the first column."""
+    """Find row index containing any keyword in the first column."""
     col_a = df.iloc[:, 0].astype(str).str.lower()
     for kw in keywords:
         match = col_a[col_a.str.contains(kw.lower())]
@@ -97,35 +104,33 @@ def find_row(df, keywords):
     return None
 
 def find_column(df, keyword):
-    """Find column index containing the keyword in the header row."""
+    """Find column index containing keyword in the header."""
     for i, col in enumerate(df.columns):
         if re.search(keyword, col, re.IGNORECASE):
             return i
     return None
 
 def get_numeric(df, row, col):
-    """Get cleaned numeric value safely."""
+    """Safely extract and clean numeric value."""
     try:
         value = str(df.iat[row, col])
         return pd.to_numeric(value.replace(",", "").replace("$", ""), errors="coerce")
     except Exception:
         return 0
 
-# Detect columns and rows dynamically
-monthly_col = find_column(df, "month") or 1  # fallback to 2nd column (B)
+# --- detect column indices ---
+monthly_col = find_column(df, "month") or 1
 ytd_col = find_column(df, "ytd") or monthly_col
 
-# Detect specific KPI rows using Pioneer’s naming
+# --- detect key rows ---
 ebitda_row = find_row(df, ["ebitda"])
 subscriber_row = find_row(df, ["users months", "user months"])
 mrr_row = find_row(df, ["broadhub rev", "broadhub revenue", "broadhub"])
 
-# Extract values
+# --- extract values ---
 ebitda_value = get_numeric(df, ebitda_row, monthly_col) if ebitda_row is not None else 0
 subscriber_count = get_numeric(df, subscriber_row, monthly_col) if subscriber_row is not None else 0
 mrr_value = get_numeric(df, mrr_row, monthly_col) if mrr_row is not None else 0
-
-# Derived metrics
 arpu_value = (mrr_value / subscriber_count) if subscriber_count > 0 else 0
 
 # -------------------------------
@@ -149,6 +154,12 @@ if ebitda_value == 0:
 # DATA TABLE
 # -------------------------------
 st.subheader(f"📋 Profit & Loss Sheet Preview – {selected_tab}")
+# Duplicate column protection before rendering
+if df.columns.duplicated().any():
+    df.columns = [
+        f"{col}_{i+1}" if df.columns.tolist().count(col) > 1 else col
+        for i, col in enumerate(df.columns)
+    ]
 st.dataframe(df, use_container_width=True)
 
 # -------------------------------
